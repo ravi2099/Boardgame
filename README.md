@@ -73,9 +73,9 @@ This web application displays lists of board games and their reviews. While anyo
 
 
 ### Master & Worker Node
-
+```
 vim bp.sh
-
+```
 ```bash
 sudo apt-get update
 
@@ -89,25 +89,25 @@ curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --
 echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
 
 ```
-
+```
 chmod +x bp.sh
 ./bp.sh
 
 sudo apt update
 
 sudo apt install -y kubeadm=1.28.1-1.1 kubelet=1.28.1-1.1 kubectl=1.28.1-1.1
-
+```
 ### Master Node
-
+```
 sudo kubeadm init --pod-network-cidr=10.244.0.0/16
-
+```
 //save a given kubeadm join token commadn and past into slave/worker node
 
 **Slave/Worker Node**
 //fire a command collect from masternode for connection
 
 ### Master Node
-
+```
 mkdir -p $HOME/.kube
 sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
@@ -117,7 +117,7 @@ kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v0.49.0/deploy/static/provider/baremetal/deploy.yaml
 
 kubectl get nodes
-
+```
 0.27 min
 ---
 ## Other server Ready
@@ -134,8 +134,9 @@ sudo apt-get install -y uidmap
 dockerd-rootless-setuptool.sh install
 ```
  2. SonarQube Image run
+ ```
  docker run -d --name Sonar -p 900:900 sonarqube:tls-community
- 
+ ```
  server_ip:900
  user:admin  pass:admin 
 
@@ -151,18 +152,20 @@ sudo apt-get install -y uidmap
 dockerd-rootless-setuptool.sh install
 ```
  2. Nexus Image Run
+ ```
 docker run -d --name Nexus -p 8081:8081 sonatype/nexus3
 docker ps
 docker exec -it <container id> /bin/bash
 
 cd sonatype-work/nexus3
 cat admin.password
-
+```
 server_ip:8081
 
 ### 3. Jenkisn Server
+```
 sudo apt update
-
+```
  1. install docker and access rootess mode
 
 ```
@@ -174,7 +177,7 @@ sudo apt-get install -y uidmap
 dockerd-rootless-setuptool.sh install
 ```
 2. Install Trivy [1.05] (https://trivy.dev/v0.63/getting-started/installation/)
-
+```
 vim trivy.sh
 
 ```
@@ -184,14 +187,15 @@ echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.
 sudo apt-get update
 sudo apt-get install trivy -y
 ```
-
+```
 sudo chmod +x trivy.sh
 ./trivy.sh
 trivy --version
-
+```
 3. install jenkins
+```
 vim jenkin.sh
-
+```
 ```bash
 
 #!/bin/bash
@@ -215,13 +219,14 @@ sudo apt-get update
 sudo apt-get install jenkins -y
 
 ```
-
+```
 chmod +x jenkin.sh
 ./jenkin.sh
-
+```
 server_ip:8080
+```
 sudo cat /var/lin/jenkins/secrets/initialAdminPassword
-
+```
  ### 4. Configuration and create Job into Jenkins
 
  - 1.Install plugins 
@@ -257,7 +262,8 @@ sudo cat /var/lin/jenkins/secrets/initialAdminPassword
  		Boardgame > Configuration
  		Configure Above Plugins in Jenkins
  [1.02 - 1.50]
- ```
+ 
+```
 pipeline {
     agent any
     
@@ -416,8 +422,12 @@ pipeline {
     user-2 , role-2 (good level of access)
     user-3 , role-3 (read only access)
 
+```
 kubectl crate ns webapps
+```
+```
 vi svc.yaml
+```
 ```yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -425,10 +435,12 @@ metadata:
   name: jenkins
   namespace: webapps
 ```
+```
 kubectl apply -f svc.yaml
-
+```
+```
 vi role.yaml
-
+```
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -469,9 +481,13 @@ rules:
       - services
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 ```
+```
 kubectl apply -f role.yaml
-
+```
+```
 vi bind.yaml
+```
+
 ```yaml
 
 apiVersion: rbac.authorization.k8s.io/v1
@@ -489,10 +505,12 @@ subjects:
   name: jenkins 
 
   ```
+```
 kubectl apply -f bind.yaml
-
+```
+```
 vi sec.yaml 
-
+```
 ```yaml
 apiVersion: v1
 kind: Secret
@@ -503,6 +521,7 @@ metadata:
     kubernetes.io/service-account.name: jenkins
 
 ```
+```
 kubectl apply -f sec.yaml -n webapps
 
 kubectl describe secret mysecretname -n webapps
@@ -510,23 +529,26 @@ kubectl describe secret mysecretname -n webapps
 cd ~/.kube
 ls
 cat config
+```
     server : ip
 
 Modify deployment-service.yaml file in my project
 
   
 ### Kubelet install on jenkins server
-
+```
 vi kubelet.sh
+```
 ```bash
 curl -o kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.19.6/2021-01-05/bin/linux/amd64/kubectl
 chmod +x ./kubectl
 sudo mv ./kubectl /usr/local/bin
 kubectl version --short --client
 ```
+```
 chmod +x kubelet.sh
 ./kubelet.sh
-
+```
 
 
 ### configure maile notification
@@ -564,10 +586,13 @@ test email abrahim.ctech@gmail.com
  
 
 ### Monitoring part
-sudo apt update -y
 
+```
+sudo apt update -y
+```
 1. Install prometheuse (https://prometheus.io/download/)
 
+```
 wget https://github.com/prometheus/prometheus/releases/download/v3.5.0-rc.0/prometheus-3.5.0-rc.0.linux-amd64.tar.gz
 
 ls
@@ -576,38 +601,39 @@ rm -rf prometheus-3.5.0-rc.0.linux-amd64.tar.gz
 cd prometheus prometheus-3.5.0-rc.0.linux-amd64
 ls 
 ./prometheus &
-
+```
 public_ip:9090
 
 
 2.Install Grafana(https://grafana.com/grafana/download)
-
+```
 sudo apt-get install -y adduser libfontconfig1 musl
 wget https://dl.grafana.com/enterprise/release/grafana-enterprise_12.0.2_amd64.deb
 sudo dpkg -i grafana-enterprise_12.0.2_amd64.deb
 
 sudo /bin/systemctl start grafana-server
-
+```
 public_ip:3000
 user:admin pass:admin
 
 3. Blackbos_exporter (https://prometheus.io/download/)
-
+```
 wget https://github.com/prometheus/blackbox_exporter/releases/download/v0.27.0/blackbox_exporter-0.27.0.linux-amd64.tar.gz
 
 tar -xvf blackbox_exporter-0.27.0.linux-amd64.tar.gz
 rm -rf blackbox_exporter-0.27.0.linux-amd64.tar.gz
 cd blackbox_exporter-0.27.0.linux-amd64
 ls ./backbox_exporter &
-
+```
 public_ip:9115
 
 
 add into  prometheuse.yml file (https://github.com/prometheus/blackbox_exporter)
+```
 cd prometheus prometheus-3.5.0-rc.0.linux-amd64
 ls 
 vim prometheus.yml
-
+```
 ```yml
   - job_name: 'blackbox'
     metrics_path: /probe
@@ -626,15 +652,15 @@ vim prometheus.yml
         replacement: 127.0.0.1:9115  # The blackbox exporter's real hostname:port.
 
 ```
-
+```
 pgrep prometheus
 kill id
 ./prometheus & 
 
-
+```
 
 4.Install Node exporter on jenkis server
-
+```
 wget https://github.com/prometheus/node_exporter/releases/download/v1.9.1/node_exporter-1.9.1.linux-amd64.tar.gz
 ls 
 tar -xvf node_exporter-1.9.1.linux-amd64.tar.gz
@@ -648,6 +674,7 @@ cd prometheus prometheus-3.5.0-rc.0.linux-amd64
 ls 
 vim prometheus.yml
 ```
+```
 - job_name: 'node_exporter'
     static_configs:
       - targets: ['IP:9100']
@@ -658,11 +685,12 @@ vim prometheus.yml
       - targets: ['ip:8080']
 
 ```
+```
 pgrep prometheus
 kill id
 ./prometheus &
 
-
+```
 
 
 
