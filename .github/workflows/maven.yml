@@ -51,7 +51,7 @@ jobs:
 
     - name: Build Docker Image
       run: |
-        docker build -t adijaiswal/boardgame:latest .
+        docker build -t abrahimcse/boardgame:latest .
 
     - name: Trivy Image Scan
       run: |
@@ -65,7 +65,7 @@ jobs:
 
     - name: Push Docker Image
       run: |
-          docker push adijaiswal/boardgame:latest
+          docker push abrahimcse/boardgame:latest
 
 
 
