@@ -65,9 +65,8 @@ This web application displays lists of board games and their reviews. While anyo
 	- Slave-2
 	- SonarQube
 	- Nexus
+  - Jenkins (t2 large,30)
   - Monitor
-	- Jenkins (t2 large,30)
-
 
 ## Setup K8-Cluster using kubeadm [K8 Version-->1.28.1]
 
@@ -143,9 +142,9 @@ dockerd-rootless-setuptool.sh install
 ```
  2. SonarQube Image run
  ```
- docker run -d --name Sonar -p 900:900 sonarqube:tls-community
+ docker run -d --name Sonar -p 9000:9000 sonarqube:lts-community
  ```
- server_ip:900
+ http://<server_ip>:9000/
  user:admin  pass:admin 
 
 ### 2. Nexus Server
@@ -163,18 +162,20 @@ dockerd-rootless-setuptool.sh install
  ```
 docker run -d --name Nexus -p 8081:8081 sonatype/nexus3
 docker ps
-docker exec -it <container id> /bin/bash
+docker exec -it <container id> sh
 
 cd sonatype-work/nexus3
 cat admin.password
 ```
-server_ip:8081
+**http://<server_ip>:8081/**
+user : admin
+pass : get from container
+
+***Enable anonymous access***
 
 ### 3. Jenkisn Server
-```
-sudo apt update
-```
- 1. install docker and access rootess mode
+
+1. install docker and access rootess mode
 
 ```
 sudo apt update
@@ -187,7 +188,7 @@ dockerd-rootless-setuptool.sh install
 2. Install Trivy [1.05] (https://trivy.dev/v0.63/getting-started/installation/)
 ```
 vim trivy.sh
-
+```
 ```
 sudo apt-get install wget gnupg
 wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
