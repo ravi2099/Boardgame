@@ -168,8 +168,9 @@ cd sonatype-work/nexus3
 cat admin.password
 ```
 **http://<server_ip>:8081/**
-user : admin
-pass : get from container
+
+- user : admin
+- pass : get from container
 
 ***Enable anonymous access***
 
@@ -232,9 +233,10 @@ sudo apt-get install jenkins -y
 chmod +x jenkin.sh
 ./jenkin.sh
 ```
-server_ip:8080
+**http://<server_ip>:8081/**
+
 ```
-sudo cat /var/lin/jenkins/secrets/initialAdminPassword
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword
 ```
  ### 4. Configuration and create Job into Jenkins
 
