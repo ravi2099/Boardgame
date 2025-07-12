@@ -134,7 +134,7 @@ kubeaudit all
     user-3 , role-3 (read only access)
 
 ```
-kubectl crate ns webapps
+kubectl create ns webapps
 ```
 ```
 vi svc.yaml
