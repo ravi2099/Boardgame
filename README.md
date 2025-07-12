@@ -118,7 +118,15 @@ kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/cont
 
 kubectl get nodes
 ```
-0.27 min
+### Securty fot for tester
+[Kube audit](https://github.com/Shopify/kubeaudit/releases)
+```
+wget https://github.com/Shopify/kubeaudit/releases/download/v0.22.2/kubeaudit_0.22.2_linux_amd64.tar.gz
+tar -xvzf kubeaudit_0.22.2_linux_amd64.tar.gz
+sudo mv kubeaudit /usr/local/bin/
+kubeaudit all
+```
+
 ---
 ## Other server Ready
 
