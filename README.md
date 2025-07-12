@@ -125,307 +125,7 @@ tar -xvzf kubeaudit_0.22.2_linux_amd64.tar.gz
 sudo mv kubeaudit /usr/local/bin/
 kubeaudit all
 ```
-
----
-## Other server Ready
-
-### 1. Sonarqube Server
- 1. install docker and access rootess mode
-
-```
-sudo apt update
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-
-sudo apt-get install -y uidmap
-dockerd-rootless-setuptool.sh install
-```
- 2. SonarQube Image run
- ```
- docker run -d --name Sonar -p 9000:9000 sonarqube:lts-community
- ```
- http://<server_ip>:9000/
- user:admin  pass:admin 
-
-### 2. Nexus Server
- 1. install docker and access rootess mode
-
-```
-sudo apt update
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-
-sudo apt-get install -y uidmap
-dockerd-rootless-setuptool.sh install
-```
- 2. Nexus Image Run
- ```
-docker run -d --name Nexus -p 8081:8081 sonatype/nexus3
-docker ps
-docker exec -it <container id> sh
-
-cd sonatype-work/nexus3
-cat admin.password
-```
-**http://<server_ip>:8081/**
-
-- user : admin
-- pass : get from container
-
-***Enable anonymous access***
-
-### 3. Jenkisn Server
-
-1. install docker and access rootess mode
-
-```
-sudo apt update
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-
-sudo apt-get install -y uidmap
-dockerd-rootless-setuptool.sh install
-```
-2. Install Trivy [1.05] (https://trivy.dev/v0.63/getting-started/installation/)
-```
-vim trivy.sh
-```
-```
-sudo apt-get install wget gnupg
-wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
-echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
-sudo apt-get update
-sudo apt-get install trivy -y
-```
-```
-sudo chmod +x trivy.sh
-./trivy.sh
-trivy --version
-```
-3. install jenkins
-```
-vim jenkin.sh
-```
-```bash
-
-#!/bin/bash
-
-# Install OpenJDK 17 JRE Headless
-sudo apt install openjdk-17-jre-headless -y
-
-# Download Jenkins GPG key
-sudo wget -O /usr/share/keyrings/jenkins-keyring.asc \
-  https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
-
-# Add Jenkins repository to package manager sources
-echo deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] \
-  https://pkg.jenkins.io/debian-stable binary/ | sudo tee \
-  /etc/apt/sources.list.d/jenkins.list > /dev/null
-
-# Update package manager repositories
-sudo apt-get update
-
-# Install Jenkins
-sudo apt-get install jenkins -y
-
-```
-```
-chmod +x jenkin.sh
-./jenkin.sh
-```
-**http://<server_ip>:8081/**
-
-```
-sudo cat /var/lib/jenkins/secrets/initialAdminPassword
-```
- ### 4. Configuration and create Job into Jenkins
-
- - 1.Install plugins 
-
- 	(Eclips Termurin Installer, Config File Provider, Maven Integration, Pipeline Maven Integration, sonarQube Scanner, Docker, Docker pipeline, Kubernets, kubernetes cli,kubernets Client API, Kubernets Credentials,Prometheus metrics)
- 
- - 2. Configure Plugins (Dashboard > Manage Jenkins > tools) [Time : 0.55 mint-0.58]
-  		
-  	- JDK Install (name:jdk17, check install automatically, install from adoptium.net and add version jdk-17.0.9+9)
-  	- SonarQube Scanner (name: sonar-scanner, version: )
-  	- Maven (name: maven3, version: 3.6.1)
-  	- Docker (name: docker, version: install automaticaly version latest)
-
-  - apply
-
- - 3. Credential
-  Manage Jenkins > Credentials > System > Global Credential
-    
-    - github [1.02 - 1.04]
-    - sonarqube [1.08 - 1.10]
-        - Quality Gate webhook , publisher [1.14 - 1.19]
-    - nexus [1.18 - ]
-      manage > configfiles > add config
-
-    - k8s cluster secreate [1.32 - 1.35]
-     k8-cred
-
-
-
- - 4. Create job [Time : 0.59 - ]
- 		name: BoardGame , select Pipeline
-
- 		Boardgame > Configuration
- 		Configure Above Plugins in Jenkins
- [1.02 - 1.50]
- 
-```
-pipeline {
-    agent any
-    
-    tools {
-        jdk 'jdk17'
-        maven 'maven3'
-    }
-
-    enviornment {
-        SCANNER_HOME= tool 'sonar-scanner'
-    }
-
-    stages {
-        stage('Git Checkout') {
-            steps {
-               git branch: 'main', credentialsId: 'git-cred', url: 'https://github.com/jaiswaladi246/Boardgame.git'
-            }
-        }
-        
-        stage('Compile') {
-            steps {
-                sh "mvn compile"
-            }
-        }
-        
-        stage('Test') {
-            steps {
-                sh "mvn test"
-            }
-        }
-        
-        stage('File System Scan') {
-            steps {
-                sh "trivy fs --format table -o trivy-fs-report.html ."
-            }
-        }
-        
-        stage('SonarQube Analsyis') {
-            steps {
-                withSonarQubeEnv('sonar') {
-                    sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=BoardGame -Dsonar.projectKey=BoardGame \
-                            -Dsonar.java.binaries=. '''
-                }
-            }
-        }
-        
-        stage('Quality Gate') {
-            steps {
-                script {
-                  waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token' 
-                }
-            }
-        }
-        
-        stage('Build') {
-            steps {
-               sh "mvn package"
-            }
-        }
-        
-        stage('Publish To Nexus') {
-            steps {
-               withMaven(globalMavenSettingsConfig: 'global-settings', jdk: 'jdk17', maven: 'maven3', mavenSettingsConfig: '', traceability: true) {
-                    sh "mvn deploy"
-                }
-            }
-        }
-        
-        stage('Build & Tag Docker Image') {
-            steps {
-               script {
-                   withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
-                            sh "docker build -t adijaiswal/boardshack:latest ."
-                    }
-               }
-            }
-        }
-        
-        stage('Docker Image Scan') {
-            steps {
-                sh "trivy image --format table -o trivy-image-report.html adijaiswal/boardshack:latest "
-            }
-        }
-        
-        stage('Push Docker Image') {
-            steps {
-               script {
-                   withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
-                            sh "docker push adijaiswal/boardshack:latest"
-                    }
-               }
-            }
-        }
-        stage('Deploy To Kubernetes') {
-            steps {
-               withKubeConfig(caCertificate: '', clusterName: 'kubernetes', contextName: '', credentialsId: 'k8-cred', namespace: 'webapps', restrictKubeConfigAccess: false, serverUrl: 'https://172.31.8.146:6443') {
-                        sh "kubectl apply -f deployment-service.yaml"
-                }
-            }
-        }
-        
-        stage('Verify the Deployment') {
-            steps {
-               withKubeConfig(caCertificate: '', clusterName: 'kubernetes', contextName: '', credentialsId: 'k8-cred', namespace: 'webapps', restrictKubeConfigAccess: false, serverUrl: 'https://172.31.8.146:6443') {
-                        sh "kubectl get pods -n webapps"
-                        sh "kubectl get svc -n webapps"
-                }
-            }
-        }
-        
-        
-    }
-    post {
-    always {
-        script {
-            def jobName = env.JOB_NAME
-            def buildNumber = env.BUILD_NUMBER
-            def pipelineStatus = currentBuild.result ?: 'UNKNOWN'
-            def bannerColor = pipelineStatus.toUpperCase() == 'SUCCESS' ? 'green' : 'red'
-
-            def body = """
-                <html>
-                <body>
-                <div style="border: 4px solid ${bannerColor}; padding: 10px;">
-                <h2>${jobName} - Build ${buildNumber}</h2>
-                <div style="background-color: ${bannerColor}; padding: 10px;">
-                <h3 style="color: white;">Pipeline Status: ${pipelineStatus.toUpperCase()}</h3>
-                </div>
-                <p>Check the <a href="${BUILD_URL}">console output</a>.</p>
-                </div>
-                </body>
-                </html>
-            """
-
-            emailext (
-                subject: "${jobName} - Build ${buildNumber} - ${pipelineStatus.toUpperCase()}",
-                body: body,
-                to: 'jaiswaladi246@gmail.com',
-                from: 'jenkins@example.com',
-                replyTo: 'jenkins@example.com',
-                mimeType: 'text/html',
-                attachmentsPattern: 'trivy-image-report.html'
-            )
-        }
-    }
-}
-
-}
-
-```
-### 5. k8s master node (https://github.com/jaiswaladi246/EKS-Complete/blob/main/Steps-eks.md)
+### RBAC (Master Node)
  1.  create cluster service account
     [1.25-
     RBAC
@@ -535,15 +235,443 @@ metadata:
 ```
 kubectl apply -f sec.yaml -n webapps
 
-kubectl describe secret mysecretname -n webapps
+kubectl describe secret mysecretname -n webapps // collect token and save into jenkins credential
 
 cd ~/.kube
 ls
 cat config
 ```
-    server : ip
-
+server : ip 
 Modify deployment-service.yaml file in my project
+
+
+---
+## Other server Ready
+
+### 1. Sonarqube Server
+ 1. install docker and access rootess mode
+
+```
+sudo apt update
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+
+sudo apt-get install -y uidmap
+dockerd-rootless-setuptool.sh install
+```
+ 2. SonarQube Image run
+ ```
+ docker run -d --name Sonar -p 9000:9000 sonarqube:lts-community
+ ```
+ http://<server_ip>:9000/
+ user:admin  pass:admin 
+
+**Create Credential** (Administration > security > Users > Tokens)
+
+- name : sonar-token 
+- generate and copy
+
+webhok (Administration > Configuration > Webhooks)
+ - Create Webhook
+  - name :  jenkins
+  - url : http://<jenkins_public_ip>:8080/sonarqube-webhook/
+
+![webhook Image]()
+
+### 2. Nexus Server
+ 1. install docker and access rootess mode
+
+```
+sudo apt update
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+
+sudo apt-get install -y uidmap
+dockerd-rootless-setuptool.sh install
+```
+ 2. Nexus Image Run
+ ```
+docker run -d --name Nexus -p 8081:8081 sonatype/nexus3
+docker ps
+docker exec -it <container id> sh
+
+cd sonatype-work/nexus3
+cat admin.password
+```
+**http://<server_ip>:8081/**
+
+- user : admin
+- pass : get from container
+
+***Enable anonymous access***
+
+Browser
+ - mavan-release (copy)
+ - maven-snapshots (copy)
+ 
+**modify pom.xml like given bellow**
+
+```
+ 	 <distributionManagement>
+        <repository>
+            <id>maven-releases</id>
+            <url>http://18.143.91.119:8081/repository/maven-releases/</url> // collect form nexus server
+        </repository>
+        <snapshotRepository>
+            <id>maven-snapshots</id>
+            <url>http://18.143.91.119:8081/repository/maven-snapshots/</url> // collect form nexus server
+        </snapshotRepository>
+    </distributionManagement>
+```
+
+### 3. Jenkisn Server
+
+1. install docker and access rootess mode
+
+```
+sudo apt update
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+
+sudo apt-get install -y uidmap
+dockerd-rootless-setuptool.sh install
+```
+2. Install Trivy [1.05] (https://trivy.dev/v0.63/getting-started/installation/)
+```
+vim trivy.sh
+```
+```
+sudo apt-get install wget gnupg
+wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
+echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+sudo apt-get update
+sudo apt-get install trivy -y
+```
+```
+sudo chmod +x trivy.sh
+./trivy.sh
+trivy --version
+```
+3. install jenkins
+```
+vim jenkin.sh
+```
+```bash
+
+#!/bin/bash
+
+# Install OpenJDK 17 JRE Headless
+sudo apt install openjdk-17-jre-headless -y
+
+# Download Jenkins GPG key
+sudo wget -O /usr/share/keyrings/jenkins-keyring.asc \
+  https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
+
+# Add Jenkins repository to package manager sources
+echo deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] \
+  https://pkg.jenkins.io/debian-stable binary/ | sudo tee \
+  /etc/apt/sources.list.d/jenkins.list > /dev/null
+
+# Update package manager repositories
+sudo apt-get update
+
+# Install Jenkins
+sudo apt-get install jenkins -y
+
+```
+```
+chmod +x jenkin.sh
+./jenkin.sh
+```
+**http://<server_ip>:8081/**
+
+```
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+```
+ ### 4. Configuration and create Job into Jenkins
+
+ - 1.Install plugins (Dashboard > Manage Jenkins > Plugins > Availabe plugins)
+
+ 	(Eclipse Temurin installer, Config File Provider, Maven Integration, Pipeline Maven Integration, sonarQube Scanner, Docker, Docker pipeline, Kubernetes, kubernetes cli,kubernets Client API, Kubernets Credentials,Prometheus metrics)
+
+  ![Plugins]()
+ 
+ - 2. Configure Plugins (Dashboard > Manage Jenkins > tools) [Time : 0.55 mint-0.58]
+  		
+  	- JDK installations (name:jdk17, check install automatically, install from adoptium.net and add version jdk-17.0.9+9)
+  	- SonarQube Scanner installations (name: sonar-scanner, version:latest version select auto )
+  	- Maven installations (name: maven3, version: 3.6.1)
+  	- Docker (name: docker, version: install automaticaly version latest)
+
+  - apply
+
+ - 3. Credential (Manage Jenkins > Credentials > System > global > add credentials)
+
+    - github
+      - username : guthub-username
+      - secret : github-token
+      - ID : git-cred
+      - Description : git-cred
+
+    - sonarqube
+      - Kind : secret text
+        - secret: generated token(sonar-token)
+        - ID : sonar-token
+        - Description : sonar-token
+
+    - Docker Hub
+      - username: dockerhub_username
+      - pass : dockerhub_password
+      - ID : docker-cred
+      - Description : docker-cred
+
+    - K8s-Cluster
+      - Kind : secret text
+        - secret: token (kubectl describe secret mysecretname -n webapps)
+        - ID : k8-cred
+        - Description : k8-cred
+
+    - nexus [1.18 - ]
+      manage > configfiles > add config
+
+    - k8s cluster secreate [1.32 - 1.35]
+     k8-cred
+
+
+
+ - 4. Create job [Time : 0.59 - ] New Item
+ 		- name: BoardGame , 
+    - select Pipeline 
+    
+    - Ok
+
+ 		Boardgame > Configuration
+ 		
+    - Discard old builds
+      - Max # of builds to keep
+        2
+    
+    - Pipeline
+      Defination
+       Pipeline Scipt
+        Hellow World
+    
+
+```script
+pipeline {
+    agent any
+
+    stages {
+        stage('Hello') {
+            steps {
+                echo 'Hello World'
+            }
+        }
+    }
+}
+
+```
+- Pipeline Syntax
+  
+  - Sanple Step
+    git : Git
+    
+    - Reposotory URL : github url
+    - Branch : main
+    - Credential : select id
+
+```
+ git branch: 'main', credentialsId: 'git-cred', url: 'https://github.com/abrahimcse/Boardgame.git'
+```
+
+  - Sanple Step
+    withSonarQubeEnv: Prepare SonarQube Scanner environment
+
+    server token : sonar-token
+```
+withSonarQubeEnv(credentialsId: 'sonar-token') {
+}
+```
+
+
+
+- 5.  System (Manage Jenkins > System > SonarQube Servers )
+    - name : sonar
+    - server url: https://<sonar_ip_address>:9000
+      **like: http://54.169.71.209:9000**
+    - Server authentication token : sonar-token
+
+
+- 6. Manage Jenkins > Managed File > Add a new Config 
+  - check : Global Maven settings.xml
+  - id : global-settings
+  - next
+  
+  ```
+    <server>
+      <id>maven-releases</id>
+      <username>username</username>
+      <password>password</password>
+    </server>
+
+      <server>
+      <id>maven-snapshots</id>
+      <username>username</username>
+      <password>password</password>
+    </server>
+  ```
+```
+pipeline {
+    agent any
+    
+    tools {
+        jdk 'jdk17'
+        maven 'maven3'
+    }
+
+    enviornment {
+        SCANNER_HOME= tool 'sonar-scanner'
+    }
+
+    stages {
+        stage('Git Checkout') {
+            steps {
+               git branch: 'main', credentialsId: 'git-cred', url: 'https://github.com/jaiswaladi246/Boardgame.git'
+            }
+        }
+        
+        stage('Compile') {
+            steps {
+                sh "mvn compile"
+            }
+        }
+        
+        stage('Test') {
+            steps {
+                sh "mvn test"
+            }
+        }
+        
+        stage('File System Scan') {
+            steps {
+                sh "trivy fs --format table -o trivy-fs-report.html ."
+            }
+        }
+        
+        stage('SonarQube Analsyis') {
+            steps {
+                withSonarQubeEnv('sonar') {
+                    sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=BoardGame -Dsonar.projectKey=BoardGame \
+                            -Dsonar.java.binaries=. '''
+                }
+            }
+        }
+        
+        stage('Quality Gate') {
+            steps {
+                script {
+                  waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token' 
+                }
+            }
+        }
+        
+        stage('Build') {
+            steps {
+               sh "mvn package"
+            }
+        }
+        
+        stage('Publish To Nexus') {
+            steps {
+               withMaven(globalMavenSettingsConfig: 'global-settings', jdk: 'jdk17', maven: 'maven3', mavenSettingsConfig: '', traceability: true) {
+                    sh "mvn deploy"
+                }
+            }
+        }
+        
+        stage('Build & Tag Docker Image') {
+            steps {
+               script {
+                   withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
+                            sh "docker build -t abrahimcse/boardgame:latest ."
+                    }
+               }
+            }
+        }
+        
+        stage('Docker Image Scan') {
+            steps {
+                sh "trivy image --format table -o trivy-image-report.html adijaiswal/boardshack:latest "
+            }
+        }
+        
+        stage('Push Docker Image') {
+            steps {
+               script {
+                   withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
+                            sh "docker push adijaiswal/boardshack:latest"
+                    }
+               }
+            }
+        }
+        stage('Deploy To Kubernetes') {
+            steps {
+               withKubeConfig(caCertificate: '', clusterName: 'kubernetes', contextName: '', credentialsId: 'k8-cred', namespace: 'webapps', restrictKubeConfigAccess: false, serverUrl: 'https://172.31.8.146:6443') {
+                        sh "kubectl apply -f deployment-service.yaml"
+                }
+            }
+        }
+        
+        stage('Verify the Deployment') {
+            steps {
+               withKubeConfig(caCertificate: '', clusterName: 'kubernetes', contextName: '', credentialsId: 'k8-cred', namespace: 'webapps', restrictKubeConfigAccess: false, serverUrl: 'https://172.31.8.146:6443') {
+                        sh "kubectl get pods -n webapps"
+                        sh "kubectl get svc -n webapps"
+                }
+            }
+        }
+        
+        
+    }
+    post {
+    always {
+        script {
+            def jobName = env.JOB_NAME
+            def buildNumber = env.BUILD_NUMBER
+            def pipelineStatus = currentBuild.result ?: 'UNKNOWN'
+            def bannerColor = pipelineStatus.toUpperCase() == 'SUCCESS' ? 'green' : 'red'
+
+            def body = """
+                <html>
+                <body>
+                <div style="border: 4px solid ${bannerColor}; padding: 10px;">
+                <h2>${jobName} - Build ${buildNumber}</h2>
+                <div style="background-color: ${bannerColor}; padding: 10px;">
+                <h3 style="color: white;">Pipeline Status: ${pipelineStatus.toUpperCase()}</h3>
+                </div>
+                <p>Check the <a href="${BUILD_URL}">console output</a>.</p>
+                </div>
+                </body>
+                </html>
+            """
+
+            emailext (
+                subject: "${jobName} - Build ${buildNumber} - ${pipelineStatus.toUpperCase()}",
+                body: body,
+                to: 'jaiswaladi246@gmail.com',
+                from: 'jenkins@example.com',
+                replyTo: 'jenkins@example.com',
+                mimeType: 'text/html',
+                attachmentsPattern: 'trivy-image-report.html'
+            )
+        }
+    }
+}
+
+}
+
+```
+
 
   
 ### Kubelet install on jenkins server
