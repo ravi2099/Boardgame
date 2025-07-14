@@ -507,10 +507,12 @@ withSonarQubeEnv(credentialsId: 'sonar-token') {
 
 ` 5.  System (Manage Jenkins > System > SonarQube Servers )`
 
-    - name : sonar
-    - server url: https://<sonar_ip_address>:9000
-      **like: http://54.169.71.209:9000**
-    - Server authentication token : sonar-token
+  - name : sonar
+  - server url: https://<sonar_ip_address>:9000
+    
+    **like: http://54.169.71.209:9000**
+    
+  - Server authentication token : sonar-token
 
 
 ` 6. Manage Jenkins > Managed File > Add a new Config `
@@ -522,14 +524,14 @@ withSonarQubeEnv(credentialsId: 'sonar-token') {
   ```
     <server>
       <id>maven-releases</id>
-      <username>username</username>
-      <password>password</password>
+      <username>nexus_username</username>
+      <password>nexus_password</password>
     </server>
 
       <server>
       <id>maven-snapshots</id>
-      <username>username</username>
-      <password>password</password>
+      <username>nexus_username</username>
+      <password>nexus_password</password>
     </server>
   ```
 
