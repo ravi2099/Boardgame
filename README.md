@@ -409,22 +409,21 @@ sudo systemctl restart jenkins
 
  ### 5. Configuration and create Job into Jenkins
 
- > 1.Install plugins (Dashboard > Manage Jenkins > Plugins > Availabe plugins)
+ ` 1.Install plugins (Dashboard > Manage Jenkins > Plugins > Availabe plugins)`
 
  	(Pipeline: Stage View, Eclipse Temurin installer, Config File Provider, Maven Integration, Pipeline Maven Integration, sonarQube Scanner, Docker, Docker pipeline, Kubernetes, kubernetes cli,kubernets Client API, Kubernets Credentials,Prometheus metrics)
 
   ![Plugins]() 
  
-> 2. Configure Plugins (Dashboard > Manage Jenkins > tools)
+` 2. Configure Plugins (Dashboard > Manage Jenkins > tools)`
   		
   	- JDK installations (name:jdk17, check install automatically, install from adoptium.net and add version jdk-17.0.9+9)
   	- SonarQube Scanner installations (name: sonar-scanner, version:latest version select auto )
   	- Maven installations (name: maven3, version: 3.6.1)
   	- Docker (name: docker, version: install automaticaly version latest)
-
   - apply
 
-> 3. Credential (Manage Jenkins > Credentials > System > global > add credentials)
+` 3. Credential (Manage Jenkins > Credentials > System > global > add credentials)`
 
     - github
       - username : guthub-username
@@ -454,10 +453,10 @@ sudo systemctl restart jenkins
       manage > configfiles > add config
 
 
-> 4. Create job New Item
- 		- name: BoardGame , 
+` 4. Create job New Item`
+
+ 		- name: BoardGame 
     - select Pipeline 
-    
     - Ok
 
  		Boardgame > Configuration
@@ -506,14 +505,16 @@ withSonarQubeEnv(credentialsId: 'sonar-token') {
 }
 ```
 
-> 5.  System (Manage Jenkins > System > SonarQube Servers )
+` 5.  System (Manage Jenkins > System > SonarQube Servers )`
+
     - name : sonar
     - server url: https://<sonar_ip_address>:9000
       **like: http://54.169.71.209:9000**
     - Server authentication token : sonar-token
 
 
-> 6. Manage Jenkins > Managed File > Add a new Config 
+` 6. Manage Jenkins > Managed File > Add a new Config `
+
   - check : Global Maven settings.xml
   - id : global-settings
   - next
@@ -532,6 +533,7 @@ withSonarQubeEnv(credentialsId: 'sonar-token') {
     </server>
   ```
 
+` 7. Pipeline Configuration ` 
 
 ```
 pipeline {
