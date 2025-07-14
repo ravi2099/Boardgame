@@ -67,9 +67,8 @@ This web application displays lists of board games and their reviews. While anyo
 	- Nexus
   - Jenkins (t2 large,30)
   - Monitor
-
+---
 ## Setup K8-Cluster using kubeadm [K8 Version-->1.28.1]
-
 
 ### Master & Worker Node
 ```
@@ -244,12 +243,12 @@ cat config
 server : ip 
 Modify deployment-service.yaml file in my project
 
-
 ---
-## Other server Ready
 
-### 1. Sonarqube Server
- 1. install docker and access rootess mode
+# Other server Ready
+
+## 1. Sonarqube Server
+ **1. install docker and access rootess mode**
 
 ```
 sudo apt update
@@ -259,7 +258,7 @@ sudo sh get-docker.sh
 sudo apt-get install -y uidmap
 dockerd-rootless-setuptool.sh install
 ```
- 2. SonarQube Image run
+ **2. SonarQube Image run**
  ```
  docker run -d --name Sonar -p 9000:9000 sonarqube:lts-community
  ```
@@ -271,15 +270,15 @@ dockerd-rootless-setuptool.sh install
 - name : sonar-token 
 - generate and copy
 
-webhok (Administration > Configuration > Webhooks)
+**webhok **(Administration > Configuration > Webhooks)
  - Create Webhook
   - name :  jenkins
   - url : http://<jenkins_public_ip>:8080/sonarqube-webhook/
 
 ![webhook Image]()
-
-### 2. Nexus Server
- 1. install docker and access rootess mode
+---
+## 2. Nexus Server
+** 1. install docker and access rootess mode**
 
 ```
 sudo apt update
@@ -289,7 +288,7 @@ sudo sh get-docker.sh
 sudo apt-get install -y uidmap
 dockerd-rootless-setuptool.sh install
 ```
- 2. Nexus Image Run
+** 2. Nexus Image Run**
  ```
 docker run -d --name Nexus -p 8081:8081 sonatype/nexus3
 docker ps
@@ -303,13 +302,13 @@ cat admin.password
 - user : admin
 - pass : get from container
 
-***Enable anonymous access***
+`***check Enable anonymous access***`
 
 Browser
  - mavan-release (copy)
  - maven-snapshots (copy)
  
-**modify pom.xml like given bellow**
+> modify pom.xml like given bellow
 
 ```
  	 <distributionManagement>
@@ -323,10 +322,10 @@ Browser
         </snapshotRepository>
     </distributionManagement>
 ```
+---
+## 3. Jenkisn Server
 
-### 3. Jenkisn Server
-
-1. install docker and access rootess mode
+### 1. install docker and access rootess mode
 
 ```
 sudo apt update
@@ -336,7 +335,7 @@ sudo sh get-docker.sh
 sudo apt-get install -y uidmap
 dockerd-rootless-setuptool.sh install
 ```
-2. Install Trivy [1.05] (https://trivy.dev/v0.63/getting-started/installation/)
+### 2. Install Trivy (https://trivy.dev/v0.63/getting-started/installation/)
 ```
 vim trivy.sh
 ```
@@ -352,7 +351,7 @@ sudo chmod +x trivy.sh
 ./trivy.sh
 trivy --version
 ```
-3. install jenkins
+### 3. install jenkins
 ```
 vim jenkin.sh
 ```
@@ -383,20 +382,40 @@ sudo apt-get install jenkins -y
 chmod +x jenkin.sh
 ./jenkin.sh
 ```
-**http://<server_ip>:8081/**
+**http://<server_ip>:8080/**
 
 ```
 sudo cat /var/lib/jenkins/secrets/initialAdminPassword
 ```
- ### 4. Configuration and create Job into Jenkins
 
- - 1.Install plugins (Dashboard > Manage Jenkins > Plugins > Availabe plugins)
+### 4. Kubelet install on jenkins server
+```
+vi kubelet.sh
+```
+```bash
+curl -o kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.19.6/2021-01-05/bin/linux/amd64/kubectl
+chmod +x ./kubectl
+sudo mv ./kubectl /usr/local/bin
+kubectl version --short --client
+```
+```
+chmod +x kubelet.sh
+./kubelet.sh
+```
+```
+sudo usermod -aG docker jenkins
+sudo systemctl restart jenkins
+```
 
- 	(Eclipse Temurin installer, Config File Provider, Maven Integration, Pipeline Maven Integration, sonarQube Scanner, Docker, Docker pipeline, Kubernetes, kubernetes cli,kubernets Client API, Kubernets Credentials,Prometheus metrics)
+ ### 5. Configuration and create Job into Jenkins
 
-  ![Plugins]()
+ > 1.Install plugins (Dashboard > Manage Jenkins > Plugins > Availabe plugins)
+
+ 	(Pipeline: Stage View, Eclipse Temurin installer, Config File Provider, Maven Integration, Pipeline Maven Integration, sonarQube Scanner, Docker, Docker pipeline, Kubernetes, kubernetes cli,kubernets Client API, Kubernets Credentials,Prometheus metrics)
+
+  ![Plugins]() 
  
- - 2. Configure Plugins (Dashboard > Manage Jenkins > tools) [Time : 0.55 mint-0.58]
+> 2. Configure Plugins (Dashboard > Manage Jenkins > tools)
   		
   	- JDK installations (name:jdk17, check install automatically, install from adoptium.net and add version jdk-17.0.9+9)
   	- SonarQube Scanner installations (name: sonar-scanner, version:latest version select auto )
@@ -405,7 +424,7 @@ sudo cat /var/lib/jenkins/secrets/initialAdminPassword
 
   - apply
 
- - 3. Credential (Manage Jenkins > Credentials > System > global > add credentials)
+> 3. Credential (Manage Jenkins > Credentials > System > global > add credentials)
 
     - github
       - username : guthub-username
@@ -434,12 +453,8 @@ sudo cat /var/lib/jenkins/secrets/initialAdminPassword
     - nexus [1.18 - ]
       manage > configfiles > add config
 
-    - k8s cluster secreate [1.32 - 1.35]
-     k8-cred
 
-
-
- - 4. Create job [Time : 0.59 - ] New Item
+> 4. Create job New Item
  		- name: BoardGame , 
     - select Pipeline 
     
@@ -455,8 +470,6 @@ sudo cat /var/lib/jenkins/secrets/initialAdminPassword
       Defination
        Pipeline Scipt
         Hellow World
-    
-
 ```script
 pipeline {
     agent any
@@ -493,16 +506,14 @@ withSonarQubeEnv(credentialsId: 'sonar-token') {
 }
 ```
 
-
-
-- 5.  System (Manage Jenkins > System > SonarQube Servers )
+> 5.  System (Manage Jenkins > System > SonarQube Servers )
     - name : sonar
     - server url: https://<sonar_ip_address>:9000
       **like: http://54.169.71.209:9000**
     - Server authentication token : sonar-token
 
 
-- 6. Manage Jenkins > Managed File > Add a new Config 
+> 6. Manage Jenkins > Managed File > Add a new Config 
   - check : Global Maven settings.xml
   - id : global-settings
   - next
@@ -520,6 +531,8 @@ withSonarQubeEnv(credentialsId: 'sonar-token') {
       <password>password</password>
     </server>
   ```
+
+
 ```
 pipeline {
     agent any
@@ -626,29 +639,10 @@ pipeline {
     }   
 }
 
+```
+---
 
-```
-  
-### Kubelet install on jenkins server
-```
-vi kubelet.sh
-```
-```bash
-curl -o kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.19.6/2021-01-05/bin/linux/amd64/kubectl
-chmod +x ./kubectl
-sudo mv ./kubectl /usr/local/bin
-kubectl version --short --client
-```
-```
-chmod +x kubelet.sh
-./kubelet.sh
-```
-```
-sudo usermod -aG docker jenkins
-sudo systemctl restart jenkins
-```
-
-### configure maile notification
+## configure maile notification
 google manage account > security > 2-step verification > app password
 name : jenkins
 generated pass: 
@@ -681,8 +675,9 @@ advance
  Test configuration
 test email abrahim.ctech@gmail.com
  
+---
 
-### Monitoring part
+## Monitoring part
 
 ```
 sudo apt update -y
@@ -756,7 +751,7 @@ kill id
 
 ```
 
-4.Install Node exporter on jenkis server
+4. Install Node exporter on jenkis server
 ```
 wget https://github.com/prometheus/node_exporter/releases/download/v1.9.1/node_exporter-1.9.1.linux-amd64.tar.gz
 ls 
