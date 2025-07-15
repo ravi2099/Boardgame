@@ -289,8 +289,9 @@ cat config
 
 # Other server Ready
 
-## 1. Sonarqube Server
- **1. install docker and access rootless mode**
+## 1. SonarQube Server Setup
+
+### Step 1: Install Docker and Enable Rootless Mode
 
 ```bash
 sudo apt update
@@ -300,28 +301,50 @@ sudo sh get-docker.sh
 sudo apt-get install -y uidmap
 dockerd-rootless-setuptool.sh install
 ```
- **2. SonarQube Image run**
+
+### Step 2: Run SonarQube Docker Container
  
 ```bash
 docker run -d --name Sonar -p 9000:9000 sonarqube:lts-community
 ```
- http://<server_ip>:9000/
- user:admin  pass:admin 
+- Access SonarQube: `http://<server_ip>:9000/`
 
-**Create Credential** (Administration > security > Users > Tokens)
+- Default Credentials:
 
-- name : sonar-token 
-- generate and copy
+  - **Username:** `admin`
 
-**webhok **(Administration > Configuration > Webhooks)
- - Create Webhook
-  - name :  jenkins
-  - url : http://<jenkins_public_ip>:8080/sonarqube-webhook/
+  - **Password:** `admin`
+
+### Step 3: Generate Authentication Token
+
+1. Go to: `**Administration > Security > Users > Tokens**`
+
+2. Create a new token:
+
+  - **Name:** `sonar-token`
+
+3. Click **Generate** and **copy the token**
+
+### Step 4: Configure Webhook for Jenkins
+
+1. Navigate to: `**Administration > Configuration > Webhooks**`
+
+2. Click Create Webhook
+
+  - **Name:** `jenkins`
+
+  - **URL:** `http://<jenkins_public_ip>:8080/sonarqube-webhook/`
+
+**📌 Note:** Ensure Jenkins is reachable from SonarQube server.
 
 ![webhook Image]()
+
 ---
+
+
 ## 2. Nexus Server
-** 1. install docker and access rootless mode**
+
+### Step 1: Install Docker and Enable Rootless Mode
 
 ```bash
 sudo apt update
@@ -331,45 +354,53 @@ sudo sh get-docker.sh
 sudo apt-get install -y uidmap
 dockerd-rootless-setuptool.sh install
 ```
-** 2. Nexus Image Run**
+### Step 2: Run Nexus Docker Container
 
 ```bash
 docker run -d --name Nexus -p 8081:8081 sonatype/nexus3
+```
+
+### Step 3: Retrieve Admin Password
+
+```bash
 docker ps
 docker exec -it <container id> sh
 
-cd sonatype-work/nexus3
-cat admin.password
+cat sonatype-work/nexus3/admin.password
 ```
-**http://<server_ip>:8081/**
+- **Access Nexus:** `http://<server_ip>:8081/`
 
-- user : admin
-- pass : get from container
+- **Username:** admin
 
-`***check Enable anonymous access***`
+- **Password:** (copy from the file above)
+
+
+`***check Enable anonymous access***`(if needed for testing or open read access)
 
 Browser
  - maven-releases (copy)
  - maven-snapshots (copy)
  
-> modify pom.xml like given bellow
+### Step 4: Update Your Maven pom.xml
 
-```groovy
+Modify your `pom.xml` file with the Nexus repository endpoints:
+
+```xml
  	 <distributionManagement>
         <repository>
             <id>maven-releases</id>
-            <url>http://18.143.91.119:8081/repository/maven-releases/</url> // collect form nexus server
+            <url>http://18.143.91.119:8081/repository/maven-releases/</url> 
         </repository>
         <snapshotRepository>
             <id>maven-snapshots</id>
-            <url>http://18.143.91.119:8081/repository/maven-snapshots/</url> // collect form nexus server
+            <url>http://18.143.91.119:8081/repository/maven-snapshots/</url>
         </snapshotRepository>
     </distributionManagement>
 ```
 ---
-## 3. Jenkins Server
+## 3. Jenkins Server Setup (CI/CD Pipeline with SonarQube, Nexus, Docker, Kubernetes)
 
-### 1. install docker and access rootless mode
+### Step 1: Install Docker (with Rootless Mode)
 
 ```bash
 sudo apt update
@@ -379,11 +410,19 @@ sudo sh get-docker.sh
 sudo apt-get install -y uidmap
 dockerd-rootless-setuptool.sh install
 ```
-### 2. Install Trivy (https://trivy.dev/v0.63/getting-started/installation/)
+**Verify Docker:**
+```bash
+docker --version
+```
+
+### Step 2: Install Trivy (Security Vulnerability Scanner)
+[Official docks:](https://trivy.dev/v0.63/getting-started/installation/)
 
 ```bash
 vim trivy.sh
 ```
+**Paste into `trivy.sh:`**
+
 ```bash
 sudo apt-get install wget gnupg
 wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
@@ -391,16 +430,20 @@ echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.
 sudo apt-get update
 sudo apt-get install trivy -y
 ```
+**Run script:**
+
 ```bash
 sudo chmod +x trivy.sh
 ./trivy.sh
 trivy --version
 ```
-### 3. install jenkins
+### Step 3: Install Jenkins (Debian/Ubuntu)
 
 ```bash
 vim jenkin.sh
 ```
+**Paste into `jenkin.sh:`**
+
 ```bash
 
 #!/bin/bash
@@ -424,101 +467,196 @@ sudo apt-get update
 sudo apt-get install jenkins -y
 
 ```
+**Run it:**
+
 ```bash
 chmod +x jenkin.sh
 ./jenkin.sh
 ```
-**http://<server_ip>:8080/**
+**Access Jenkins:**
+- **URL:** `http://<server_ip>:8080`
+
+- Initial password:
 
 ```bash
 sudo cat /var/lib/jenkins/secrets/initialAdminPassword
 ```
 
-### 4. Kubelet install on jenkins server
+### Step 4: Install kubectl on Jenkins Server
 ```
 vi kubelet.sh
 ```
+**Paste into `kubelet.sh`**
+
 ```bash
+#!/bin/bash
 curl -o kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.19.6/2021-01-05/bin/linux/amd64/kubectl
 chmod +x ./kubectl
 sudo mv ./kubectl /usr/local/bin
 kubectl version --short --client
 ```
+**Run it:**
+
 ```bash
 chmod +x kubelet.sh
 ./kubelet.sh
 ```
-**Jenkins Restart**
+### Step 5: Add Jenkins to Docker Group
 
 ```bash
 sudo usermod -aG docker jenkins
 sudo systemctl restart jenkins
 ```
 
- ### 5. Configuration and create Job into Jenkins
+## Jenkins Configuration
 
- ` 1.Install plugins (Dashboard > Manage Jenkins > Plugins > Availabe plugins)`
+### Step 6: Install Required Plugins
 
- 	(Pipeline: Stage View, Eclipse Temurin installer, Config File Provider, Maven Integration, Pipeline Maven Integration, sonarQube Scanner, Docker, Docker pipeline, Kubernetes, kubernetes cli,kubernets Client API, Kubernets Credentials,Prometheus metrics)
+**Navigate: `Dashboard > Manage Jenkins > Plugins > Available Plugins`**
 
-  ![Plugins]() 
- 
-` 2. Configure Plugins (Dashboard > Manage Jenkins > tools)`
-  		
-  	- JDK installations (name:jdk17, check install automatically, install from adoptium.net and add version jdk-17.0.9+9)
-  	- SonarQube Scanner installations (name: sonar-scanner, version:latest version select auto )
-  	- Maven installations (name: maven3, version: 3.6.1)
-  	- Docker (name: docker, version: install automaticaly version latest)
-  - apply
+**Install:**
 
-` 3. Credential (Manage Jenkins > Credentials > System > global > add credentials)`
+  ✅ Docker
+  ✅ Docker Pipeline
+  ✅ Kubernetes
+  ✅ Kubernetes CLI
+  ✅ Kubernetes Client API
+  ✅ Kubernetes Credentials
+  ✅ Prometheus Metrics
+  ✅ Pipeline: Stage View
+  ✅ Pipeline Maven Integration
+  ✅ Maven Integration
+  ✅ SonarQube Scanner
+  ✅ Config File Provider
+  ✅ Eclipse Temurin installer
 
-    - github
-      - username : guthub-username
-      - secret : github-token
-      - ID : git-cred
-      - Description : git-cred
+*📝 Restart Jenkins after plugin installation.*
 
-    - sonarqube
-      - Kind : secret text
-        - secret: generated token(sonar-token)
-        - ID : sonar-token
-        - Description : sonar-token
+![Plugins]() 
 
-    - Docker Hub
-      - username: dockerhub_username
-      - pass : dockerhub_password
-      - ID : docker-cred
-      - Description : docker-cred
+### Step 7: Global Tool Configuration
 
-    - K8s-Cluster
-      - Kind : secret text
-        - secret: token (kubectl describe secret mysecretname -n webapps)
-        - ID : k8-cred
-        - Description : k8-cred
+**Navigate: `Dashboard > Manage Jenkins > Tools`**
 
-    - nexus [1.18 - ]
-      manage > configfiles > add config
+- **JDK:**
 
+  - Name: `jdk17`
 
-` 4. Create job New Item`
+  - Check "Install automatically"
 
- 		- name: BoardGame 
-    - select Pipeline 
-    - Ok
+  - Source: `Adoptium.net`
 
- 		Boardgame > Configuration
- 		
-    - Discard old builds
-      - Max # of builds to keep
-        2
-    
-    - Pipeline
-      Definition
-       Pipeline Scipt
-        Hellow World
+  - Version: `jdk-17.0.9+9`
 
-```bash
+- **SonarQube Scanner:**
+
+  - Name: `sonar-scanner`
+
+  - Version: `latest`
+
+- **Maven:**
+
+  - Name: `maven3`
+
+  - Version: `3.6.1`
+
+- **Docker:**
+
+  - Name: `docker`
+
+  - Install Automatically
+
+### Step 8: Credentials Setup
+
+**Navigate: `Manage Jenkins > Credentials > System > Global > Add Credentials`**
+
+- **github**
+  - username : `guthub-username`
+  - secret : `github-token`
+  - ID : `git-cred`
+  - Description : `git-cred`
+
+- **sonarqube**
+  - Kind : `secret text`
+  - secret: `generated token(sonar-token)`
+  - ID : `sonar-token`
+  - Description : `sonar-token`
+
+- **Docker Hub**
+  - username: dockerhub_username
+  - pass : dockerhub_password
+  - ID : docker-cred
+  - Description : docker-cred
+
+- **K8s-Cluster**
+  - Kind : `secret text`
+  - secret: `token` (kubectl describe secret mysecretname -n webapps)
+  - ID : `k8-cred`
+  - Description : `k8-cred`
+
+### Step 9: Add Maven Settings File (for Nexus)
+
+**Navigate: `Manage Jenkins > Managed Files > Add a New Config`**
+
+- Type: **Global Maven settings.xml**
+
+- ID: `global-settings`
+
+**Paste:**
+
+```xml
+<settings>
+  <servers>
+    <server>
+      <id>maven-releases</id>
+      <username>nexus_username</username>
+      <password>nexus_password</password>
+    </server>
+    <server>
+      <id>maven-snapshots</id>
+      <username>nexus_username</username>
+      <password>nexus_password</password>
+    </server>
+  </servers>
+</settings>
+
+```
+### Step 10: Add SonarQube Server Info
+
+**Navigate: `Manage Jenkins > System > SonarQube Servers`**
+
+- Name: `sonar`
+
+- Server URL: `http://<sonar_server_ip>:9000`
+  
+  - **like: http://54.169.71.209:9000**
+
+- Token: `sonar-token` (from credentials)
+
+### Step 11: Create a New Pipeline Job
+
+**➤ Create Job**
+- Go to Jenkins Dashboard
+
+- Click `New Item`
+
+- Name: `BoardGame`
+
+- Type: `Pipeline`
+
+- Click `OK`
+
+**➤ Basic Configuration**
+
+- Discard Old Builds:
+  
+  - Max # of builds: `2`
+
+- Pipeline Definition:
+
+  - Choose: `Pipeline script`
+
+```groovy
 pipeline {
     agent any
 
@@ -532,7 +670,7 @@ pipeline {
 }
 
 ```
-` 5. Jenkins Declarative Pipeline Syntax (GUI to Script Mapping)`
+** ➤ Jenkins Declarative Pipeline Syntax (GUI to Script Mapping)**
 
 - Pipeline Syntax
   
@@ -557,37 +695,7 @@ withSonarQubeEnv(credentialsId: 'sonar-token') {
 }
 ```
 
-` 5.  System (Manage Jenkins > System > SonarQube Servers )`
-
-  - name : sonar
-  - server url: https://<sonar_ip_address>:9000
-    
-    **like: http://54.169.71.209:9000**
-
-  - Server authentication token : sonar-token
-
-
-` 6. Manage Jenkins > Managed File > Add a new Config `
-
-  - check : Global Maven settings.xml
-  - id : global-settings
-  - next
-  
-  ```
-    <server>
-      <id>maven-releases</id>
-      <username>nexus_username</username>
-      <password>nexus_password</password>
-    </server>
-
-      <server>
-      <id>maven-snapshots</id>
-      <username>nexus_username</username>
-      <password>nexus_password</password>
-    </server>
-  ```
-
-` 7. Pipeline Configuration ` 
+**Pipeline Configuration **
 
 Here’s a quick `visual stage flow` from your pipeline for clarity:
 
