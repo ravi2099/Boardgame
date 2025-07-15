@@ -57,23 +57,28 @@ This web application displays lists of board games and their reviews. While anyo
 
 ## 1.Boardgame
 
-- 1. Default vpc
-- 2. Default SG (8 port open)
-- 3. Create Instancess 6 (t2.medium, 25gb) + 1
-	- Master Node
+1. Default vpc
+2. Default SG (8 port open)
+3. Create Instancess 7 (t2.medium, 25gb)
+  - Master Node
 	- Slave-1
 	- Slave-2
 	- SonarQube
 	- Nexus
-  - Jenkins (t2 large,30)
   - Monitor
+  - Jenkins (t2 large,30)
 ---
-## Setup K8-Cluster using kubeadm [K8 Version-->1.28.1]
+## Setup K8-Cluster using kubeadm [v1.28.1]
 
-### Master & Worker Node
-```
+### 1. Prepare Base Script for All Nodes (Master & Worker Nodes)
+
+**Create a bootstrap shell script `bp.sh:`**
+
+```bash
 vim bp.sh
 ```
+**Paste the following content:**
+
 ```bash
 sudo apt-get update
 
@@ -87,39 +92,63 @@ curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --
 echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
 
 ```
+**Run the script:**
+
 ```bash
 chmod +x bp.sh
 ./bp.sh
 
 sudo apt update
+```
+**Install Kubernetes components:**
+
+```bash
 
 sudo apt install -y kubeadm=1.28.1-1.1 kubelet=1.28.1-1.1 kubectl=1.28.1-1.1
 ```
-### Master Node
+### 2. Initialize (Master Node)
 
 ```yml
 sudo kubeadm init --pod-network-cidr=10.244.0.0/16
 ```
-//save a given kubeadm join token commadn and past into slave/worker node
+✅ Note: Save the `kubeadm join` command displayed after this step — you'll need it on `Worker nodes`.
 
-**Slave/Worker Node**
-//fire a command collect from masternode for connection
+### 3. Join (Worker Nodes)
 
-### Master Node
+**Run the saved `kubeadm join command` from `Master node` output on each `Worker node`:**
+
+```bash
+sudo kubeadm join <MASTER_IP>:6443 --token <TOKEN> --discovery-token-ca-cert-hash sha256:<HASH>
+```
+### 4. Configure (Master Node)
+
+**Configure `kubectl` for the user:**
 
 ```bash
 mkdir -p $HOME/.kube
 sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
+```
 
+**Deploy CNI Plugin (`Calico`)**
+
+```bash
 kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
+```
 
+**Install Ingress Controller**
+
+```bash
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v0.49.0/deploy/static/provider/baremetal/deploy.yaml
+```
+**Check node status:**
 
+```bash
 kubectl get nodes
 ```
-### Securty fot for tester
-[Kube audit](https://github.com/Shopify/kubeaudit/releases)
+**Security Audit (for Testing)**
+
+Install and run [`Shopify kubeaudit`](https://github.com/Shopify/kubeaudit/releases):
 
 ```bash
 wget https://github.com/Shopify/kubeaudit/releases/download/v0.22.2/kubeaudit_0.22.2_linux_amd64.tar.gz
@@ -127,18 +156,21 @@ tar -xvzf kubeaudit_0.22.2_linux_amd64.tar.gz
 sudo mv kubeaudit /usr/local/bin/
 kubeaudit all
 ```
-### RBAC (Master Node)
- 1.  create cluster service account
-    [1.25-
-    RBAC
-    user-1 , role-1 (cluster admin access)
-    user-2 , role-2 (good level of access)
-    user-3 , role-3 (read only access)
+
+### 5. RBAC Setup (Master Node)
+1. Create cluster service account
+  user-1 , role-1 (cluster admin access)
+  user-2 , role-2 (good level of access)
+  user-3 , role-3 (read only access)
+
+**Create Namespace**
 
 ```yml
 kubectl create ns webapps
 ```
-```yml
+**Create Service Account**
+
+```bash
 vi svc.yaml
 ```
 ```yaml
@@ -148,10 +180,12 @@ metadata:
   name: jenkins
   namespace: webapps
 ```
-```yml
+```bash
 kubectl apply -f svc.yaml
 ```
-```yml
+**Create Role**
+
+```bash
 vi role.yaml
 ```
 ```yaml
@@ -194,15 +228,15 @@ rules:
       - services
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 ```
-```yml
+```bash
 kubectl apply -f role.yaml
 ```
-```yml
+**Bind Role to Service Account**
+
+```bash
 vi bind.yaml
 ```
-
 ```yaml
-
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
@@ -217,11 +251,14 @@ subjects:
   kind: ServiceAccount
   name: jenkins 
 
-  ```
-```yml
+```
+```bash
 kubectl apply -f bind.yaml
 ```
-```yml
+
+**Create Secret to Get Service Account Token**
+
+```bash
 vi sec.yaml 
 ```
 ```yaml
@@ -238,20 +275,22 @@ metadata:
 kubectl apply -f sec.yaml -n webapps
 
 kubectl describe secret mysecretname -n webapps // collect token and save into jenkins credential
+```
+**Check kubeconfig Info**
 
+```bash
 cd ~/.kube
 ls
 cat config
 ```
-server : ip 
-Modify deployment-service.yaml file in my project
+✅ Use `server: IP` from this config if needed in `deployment-service.yaml` or `Jenkins setup`.
 
 ---
 
 # Other server Ready
 
 ## 1. Sonarqube Server
- **1. install docker and access rootess mode**
+ **1. install docker and access rootless mode**
 
 ```bash
 sudo apt update
@@ -282,7 +321,7 @@ docker run -d --name Sonar -p 9000:9000 sonarqube:lts-community
 ![webhook Image]()
 ---
 ## 2. Nexus Server
-** 1. install docker and access rootess mode**
+** 1. install docker and access rootless mode**
 
 ```bash
 sudo apt update
@@ -310,7 +349,7 @@ cat admin.password
 `***check Enable anonymous access***`
 
 Browser
- - mavan-release (copy)
+ - maven-releases (copy)
  - maven-snapshots (copy)
  
 > modify pom.xml like given bellow
@@ -328,9 +367,9 @@ Browser
     </distributionManagement>
 ```
 ---
-## 3. Jenkisn Server
+## 3. Jenkins Server
 
-### 1. install docker and access rootess mode
+### 1. install docker and access rootless mode
 
 ```bash
 sudo apt update
@@ -409,7 +448,7 @@ kubectl version --short --client
 chmod +x kubelet.sh
 ./kubelet.sh
 ```
-**Jnekis Restart**
+**Jenkins Restart**
 
 ```bash
 sudo usermod -aG docker jenkins
@@ -475,7 +514,7 @@ sudo systemctl restart jenkins
         2
     
     - Pipeline
-      Defination
+      Definition
        Pipeline Scipt
         Hellow World
 
@@ -497,10 +536,10 @@ pipeline {
 
 - Pipeline Syntax
   
-  - Sanple Step
+  - Sample Step
     git : Git
     
-    - Reposotory URL : github url
+    - Repository URL : github url
     - Branch : main
     - Credential : select id
 
@@ -508,7 +547,7 @@ pipeline {
  git branch: 'main', credentialsId: 'git-cred', url: 'https://github.com/abrahimcse/Boardgame.git'
 ```
 
-  - Sanple Step
+  - Sample Step
     withSonarQubeEnv: Prepare SonarQube Scanner environment
 
     server token : sonar-token
@@ -549,6 +588,21 @@ withSonarQubeEnv(credentialsId: 'sonar-token') {
   ```
 
 ` 7. Pipeline Configuration ` 
+
+Here’s a quick `visual stage flow` from your pipeline for clarity:
+
+1. Git Checkout → 
+2. Compile →
+3. Unit Test →
+4. Trivy Scan →
+5. SonarQube Analysis →
+6. Quality Gate Check →
+7. Build JAR →
+8. Deploy to Nexus →
+9. Docker Image Build →
+10. Push to DockerHub
+11. Deploy to Kubernetes →
+12. Verify the Deployment →
 
 ```groovy
 pipeline {
@@ -792,7 +846,7 @@ vim prometheus.yml
     static_configs:
       - targets: ['IP:9100']
 
-  - job_name: 'jenkisn'
+  - job_name: 'Jenkins'
     metrics_path: /prometheus
     static_configs:
       - targets: ['ip:8080']
