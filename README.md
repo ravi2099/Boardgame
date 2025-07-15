@@ -48,17 +48,16 @@ This web application displays lists of board games and their reviews. While anyo
 2. Open the project in your IDE of choice
 3. Run the application
 4. To use initial user data, use the following credentials.
-  - username: bugs    |     password: bunny (user role)
-  - username: daffy   |     password: duck  (manager role)
+  - username: `bugs`    |     password: `bunny` (user role)
+  - username: `daffy`   |     password: `duck`  (manager role)
 5. You can also sign-up as a new user and customize your role to play with the application! 😊
 
 ---
-# Installation Process
+# Infrastructure & Installation (AWS EC2 + K8s + DevOps Tools)
 
-## 1.Boardgame
-
+## 1.AWS Setup
 1. Default vpc
-2. Default SG (8 port open)
+2. **Security Group:** Default SG with port 8 open
 3. Create Instancess 7 (t2.medium, 25gb)
 - Master Node
 - Slave-1
@@ -67,7 +66,9 @@ This web application displays lists of board games and their reviews. While anyo
 - Nexus
 - Monitor
 - Jenkins (t2 large,30)
+
 ---
+
 ## Setup K8-Cluster using kubeadm [v1.28.1]
 
 ### 1. Prepare Base Script for All Nodes (Master & Worker Nodes)
@@ -821,47 +822,70 @@ pipeline {
 ```
 ---
 
-## configure maile notification
-google manage account > security > 2-step verification > app password
-name : jenkins
-generated pass: 
+## 📧 Jenkins Email Notification Setup (Gmail SMTP)
 
-jenkins
-manage jenkins > system
-Extended E-mail Notification
- SMTP server: smtp.gmail.com
- SMTP POrt : 465
+You'll configure Jenkins to send email notifications using Gmail's SMTP service.
 
-advance
- credential add jenkins
- username : abrahim.ctech@gmail.com
- password: genereted password
- id : mail-cred
- 
- select abrahimctech@gmail.com(mail-cred)
- check use SSL
+### Step 1: Generate Gmail App Password
 
- E-mail Notification
+1. Go to https://myaccount.google.com
 
- SMTP server
- advance use ssl
- SMTP port: 465
+2. Navigate to:
+  - `Security` → `2-Step Verification` → Enable it (if not already)
+  - Scroll down to `App Passwords`
 
- use smtp authentication
- username : abrahim.ctech@gmail.com
- password: genereted password
+3. Select:
+  - App: `Mail`
+  - Device: `Jenkins` (or any name)
 
- Test configuration
-test email abrahim.ctech@gmail.com
- 
+4. ✅ **Copy the generated password **(you’ll use this in Jenkins configuration)
+
+### Step 2: Configure Jenkins Email Notification
+
+**Go to Jenkins: `manage jenkins > system`**
+
+**1. Extended E-mail Notification**
+  - SMTP server: smtp.gmail.com
+  - SMTP POrt : 465
+
+🔽 Click on Advanced
+  - Check Use SSL
+  - ✅ Add Credentials:
+    - **Kind :** Username with password
+    - **Username :** abrahim.ctech@gmail.com
+    - **Password:** genereted password
+    - **ID :** mail-cred
+  - Select the added credential `abrahimctech@gmail.com`(mail-cred)
+
+
+**2. E-mail Notification**
+- SMTP Server: `smtp.gmail.com`
+
+🔽 Click **Advanced**
+- ✅ Check Use SSL
+- SMTP Port: 465
+- ✅ Check Use SMTP Authentication
+  - Username: `abrahim.ctech@gmail.com`
+  - Password: `Generated app password`
+
+**3. Test the Configuration**
+- Scroll down to the **Test configuration** section
+- Enter your email: `abrahim.ctech@gmail.com`
+- Click **Test Configuration**
+
+You should receive a **test email** if everything is configured properly.
+
 ---
+## Monitoring Setup: Prometheus + Grafana + Exporters
 
-## Monitoring part
+Ensure your system is updated first:
 
 ```bash
 sudo apt update -y
 ```
-1. Install prometheuse (https://prometheus.io/download/)
+### Step 1: Install Prometheus
+
+**🔗 [Download Prometheus](https://prometheus.io/download)**
 
 ```bash
 wget https://github.com/prometheus/prometheus/releases/download/v3.5.0-rc.0/prometheus-3.5.0-rc.0.linux-amd64.tar.gz
@@ -869,45 +893,53 @@ wget https://github.com/prometheus/prometheus/releases/download/v3.5.0-rc.0/prom
 ls
 tar -xvf prometheus-3.5.0-rc.0.linux-amd64.tar.gz
 rm -rf prometheus-3.5.0-rc.0.linux-amd64.tar.gz
-cd prometheus prometheus-3.5.0-rc.0.linux-amd64
+mv prometheus-3.5.0-rc.0.linux-amd64 prometheus
+cd prometheus
 ls 
 ./prometheus &
 ```
-public_ip:9090
+**🌐 Access Prometheus:** `http://<public_ip>:9090`
 
+###  Step 2: Install Grafana
 
-2. Install Grafana(https://grafana.com/grafana/download)
+**🔗 [Download Grafana Enterprise](https://grafana.com/grafana/download)**
 
 ```bash
 sudo apt-get install -y adduser libfontconfig1 musl
 wget https://dl.grafana.com/enterprise/release/grafana-enterprise_12.0.2_amd64.deb
 sudo dpkg -i grafana-enterprise_12.0.2_amd64.deb
 
-sudo /bin/systemctl start grafana-server
+sudo systemctl start grafana-server
 ```
-public_ip:3000
-user:admin pass:admin
+**🌐 Access Grafana:** `http://<public_ip>:3000`
+**👤 Default Login:**
+- Username: `admin`
+- Password: `admin`
 
-3. Blackbos_exporter (https://prometheus.io/download/)
+### Step 3: Setup Blackbox Exporter
+**🔗 [Download Blackbox Exporter](https://prometheus.io/download/#blackbox_exporter)**
 
 ```bash
 wget https://github.com/prometheus/blackbox_exporter/releases/download/v0.27.0/blackbox_exporter-0.27.0.linux-amd64.tar.gz
 
 tar -xvf blackbox_exporter-0.27.0.linux-amd64.tar.gz
 rm -rf blackbox_exporter-0.27.0.linux-amd64.tar.gz
-cd blackbox_exporter-0.27.0.linux-amd64
+mv blackbox_exporter-0.27.0.linux-amd64 blackbox_exporter
+cd blackbox_exporter
 ls ./backbox_exporter &
 ```
-public_ip:9115
+**🌐 Access Blackbox Exporter:** `http://<public_ip>:9115`
 
+**Configure [prometheus.yml](https://github.com/prometheus/blackbox_exporter) to include Blackbox:**
 
-add into  prometheuse.yml file (https://github.com/prometheus/blackbox_exporter)
 
 ```bash
-cd prometheus prometheus-3.5.0-rc.0.linux-amd64
-ls 
+cd ~/prometheus
 vim prometheus.yml
+
 ```
+**Add the following job:**
+
 ```yml
   - job_name: 'blackbox'
     metrics_path: /probe
@@ -926,6 +958,8 @@ vim prometheus.yml
         replacement: 127.0.0.1:9115  # The blackbox exporter's real hostname:port.
 
 ```
+**Restart Prometheus:**
+
 ```bash
 pgrep prometheus
 kill id
@@ -933,7 +967,9 @@ kill id
 
 ```
 
-4. Install Node exporter on jenkis server
+### Step 4: Install Node Exporter (on Jenkins server)
+
+**🔗 [Download Node Exporter](https://prometheus.io/download/#node_exporter)**
 
 ```bash
 wget https://github.com/prometheus/node_exporter/releases/download/v1.9.1/node_exporter-1.9.1.linux-amd64.tar.gz
@@ -941,25 +977,32 @@ ls
 tar -xvf node_exporter-1.9.1.linux-amd64.tar.gz
 ls
 rm rf node_exporter-1.9.1.linux-amd64.tar.gz
-cd node_exporter-1.9.1.linux-amd64.tar.gz
+mv node_exporter-1.9.1.linux-amd64.tar.gz node_exporter
+cd node_exporter
 ls
 ./node_exporter &
+```
+**🌐 Node Exporter Port: `http://<jenkins_server_ip>:9100`**
 
-cd prometheus prometheus-3.5.0-rc.0.linux-amd64
+**Add Node Exporter and Jenkins Job to prometheus.yml**
+
+```
+cd prometheus
 ls 
 vim prometheus.yml
 ```
 ```yml
-- job_name: 'node_exporter'
+  - job_name: 'node_exporter'
     static_configs:
-      - targets: ['IP:9100']
+      - targets: ['<jenkins_server_ip>:9100']
 
-  - job_name: 'Jenkins'
+  - job_name: 'jenkins'
     metrics_path: /prometheus
     static_configs:
-      - targets: ['ip:8080']
-
+      - targets: ['<jenkins_server_ip>:8080']
 ```
+**Restart Prometheus:**
+
 ```bash
 pgrep prometheus
 kill id
