@@ -87,7 +87,7 @@ curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --
 echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
 
 ```
-```
+```bash
 chmod +x bp.sh
 ./bp.sh
 
@@ -96,7 +96,8 @@ sudo apt update
 sudo apt install -y kubeadm=1.28.1-1.1 kubelet=1.28.1-1.1 kubectl=1.28.1-1.1
 ```
 ### Master Node
-```
+
+```yml
 sudo kubeadm init --pod-network-cidr=10.244.0.0/16
 ```
 //save a given kubeadm join token commadn and past into slave/worker node
@@ -105,7 +106,8 @@ sudo kubeadm init --pod-network-cidr=10.244.0.0/16
 //fire a command collect from masternode for connection
 
 ### Master Node
-```
+
+```bash
 mkdir -p $HOME/.kube
 sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
@@ -118,7 +120,8 @@ kubectl get nodes
 ```
 ### Securty fot for tester
 [Kube audit](https://github.com/Shopify/kubeaudit/releases)
-```
+
+```bash
 wget https://github.com/Shopify/kubeaudit/releases/download/v0.22.2/kubeaudit_0.22.2_linux_amd64.tar.gz
 tar -xvzf kubeaudit_0.22.2_linux_amd64.tar.gz
 sudo mv kubeaudit /usr/local/bin/
@@ -132,10 +135,10 @@ kubeaudit all
     user-2 , role-2 (good level of access)
     user-3 , role-3 (read only access)
 
-```
+```yml
 kubectl create ns webapps
 ```
-```
+```yml
 vi svc.yaml
 ```
 ```yaml
@@ -145,10 +148,10 @@ metadata:
   name: jenkins
   namespace: webapps
 ```
-```
+```yml
 kubectl apply -f svc.yaml
 ```
-```
+```yml
 vi role.yaml
 ```
 ```yaml
@@ -191,10 +194,10 @@ rules:
       - services
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 ```
-```
+```yml
 kubectl apply -f role.yaml
 ```
-```
+```yml
 vi bind.yaml
 ```
 
@@ -215,10 +218,10 @@ subjects:
   name: jenkins 
 
   ```
-```
+```yml
 kubectl apply -f bind.yaml
 ```
-```
+```yml
 vi sec.yaml 
 ```
 ```yaml
@@ -231,7 +234,7 @@ metadata:
     kubernetes.io/service-account.name: jenkins
 
 ```
-```
+```bash
 kubectl apply -f sec.yaml -n webapps
 
 kubectl describe secret mysecretname -n webapps // collect token and save into jenkins credential
@@ -250,7 +253,7 @@ Modify deployment-service.yaml file in my project
 ## 1. Sonarqube Server
  **1. install docker and access rootess mode**
 
-```
+```bash
 sudo apt update
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
@@ -259,9 +262,10 @@ sudo apt-get install -y uidmap
 dockerd-rootless-setuptool.sh install
 ```
  **2. SonarQube Image run**
- ```
- docker run -d --name Sonar -p 9000:9000 sonarqube:lts-community
- ```
+ 
+```bash
+docker run -d --name Sonar -p 9000:9000 sonarqube:lts-community
+```
  http://<server_ip>:9000/
  user:admin  pass:admin 
 
@@ -280,7 +284,7 @@ dockerd-rootless-setuptool.sh install
 ## 2. Nexus Server
 ** 1. install docker and access rootess mode**
 
-```
+```bash
 sudo apt update
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
@@ -289,7 +293,8 @@ sudo apt-get install -y uidmap
 dockerd-rootless-setuptool.sh install
 ```
 ** 2. Nexus Image Run**
- ```
+
+```bash
 docker run -d --name Nexus -p 8081:8081 sonatype/nexus3
 docker ps
 docker exec -it <container id> sh
@@ -310,7 +315,7 @@ Browser
  
 > modify pom.xml like given bellow
 
-```
+```groovy
  	 <distributionManagement>
         <repository>
             <id>maven-releases</id>
@@ -327,7 +332,7 @@ Browser
 
 ### 1. install docker and access rootess mode
 
-```
+```bash
 sudo apt update
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
@@ -336,23 +341,25 @@ sudo apt-get install -y uidmap
 dockerd-rootless-setuptool.sh install
 ```
 ### 2. Install Trivy (https://trivy.dev/v0.63/getting-started/installation/)
-```
+
+```bash
 vim trivy.sh
 ```
-```
+```bash
 sudo apt-get install wget gnupg
 wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
 echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
 sudo apt-get update
 sudo apt-get install trivy -y
 ```
-```
+```bash
 sudo chmod +x trivy.sh
 ./trivy.sh
 trivy --version
 ```
 ### 3. install jenkins
-```
+
+```bash
 vim jenkin.sh
 ```
 ```bash
@@ -378,13 +385,13 @@ sudo apt-get update
 sudo apt-get install jenkins -y
 
 ```
-```
+```bash
 chmod +x jenkin.sh
 ./jenkin.sh
 ```
 **http://<server_ip>:8080/**
 
-```
+```bash
 sudo cat /var/lib/jenkins/secrets/initialAdminPassword
 ```
 
@@ -398,11 +405,13 @@ chmod +x ./kubectl
 sudo mv ./kubectl /usr/local/bin
 kubectl version --short --client
 ```
-```
+```bash
 chmod +x kubelet.sh
 ./kubelet.sh
 ```
-```
+**Jnekis Restart**
+
+```bash
 sudo usermod -aG docker jenkins
 sudo systemctl restart jenkins
 ```
@@ -469,7 +478,8 @@ sudo systemctl restart jenkins
       Defination
        Pipeline Scipt
         Hellow World
-```script
+
+```bash
 pipeline {
     agent any
 
@@ -494,7 +504,7 @@ pipeline {
     - Branch : main
     - Credential : select id
 
-```
+```groovy
  git branch: 'main', credentialsId: 'git-cred', url: 'https://github.com/abrahimcse/Boardgame.git'
 ```
 
@@ -502,7 +512,8 @@ pipeline {
     withSonarQubeEnv: Prepare SonarQube Scanner environment
 
     server token : sonar-token
-```
+
+```groovy
 withSonarQubeEnv(credentialsId: 'sonar-token') {
 }
 ```
@@ -539,7 +550,7 @@ withSonarQubeEnv(credentialsId: 'sonar-token') {
 
 ` 7. Pipeline Configuration ` 
 
-```
+```groovy
 pipeline {
     agent any
     
@@ -685,12 +696,12 @@ test email abrahim.ctech@gmail.com
 
 ## Monitoring part
 
-```
+```bash
 sudo apt update -y
 ```
 1. Install prometheuse (https://prometheus.io/download/)
 
-```
+```bash
 wget https://github.com/prometheus/prometheus/releases/download/v3.5.0-rc.0/prometheus-3.5.0-rc.0.linux-amd64.tar.gz
 
 ls
@@ -703,8 +714,9 @@ ls
 public_ip:9090
 
 
-2.Install Grafana(https://grafana.com/grafana/download)
-```
+2. Install Grafana(https://grafana.com/grafana/download)
+
+```bash
 sudo apt-get install -y adduser libfontconfig1 musl
 wget https://dl.grafana.com/enterprise/release/grafana-enterprise_12.0.2_amd64.deb
 sudo dpkg -i grafana-enterprise_12.0.2_amd64.deb
@@ -715,7 +727,8 @@ public_ip:3000
 user:admin pass:admin
 
 3. Blackbos_exporter (https://prometheus.io/download/)
-```
+
+```bash
 wget https://github.com/prometheus/blackbox_exporter/releases/download/v0.27.0/blackbox_exporter-0.27.0.linux-amd64.tar.gz
 
 tar -xvf blackbox_exporter-0.27.0.linux-amd64.tar.gz
@@ -727,7 +740,8 @@ public_ip:9115
 
 
 add into  prometheuse.yml file (https://github.com/prometheus/blackbox_exporter)
-```
+
+```bash
 cd prometheus prometheus-3.5.0-rc.0.linux-amd64
 ls 
 vim prometheus.yml
@@ -750,7 +764,7 @@ vim prometheus.yml
         replacement: 127.0.0.1:9115  # The blackbox exporter's real hostname:port.
 
 ```
-```
+```bash
 pgrep prometheus
 kill id
 ./prometheus & 
@@ -758,7 +772,8 @@ kill id
 ```
 
 4. Install Node exporter on jenkis server
-```
+
+```bash
 wget https://github.com/prometheus/node_exporter/releases/download/v1.9.1/node_exporter-1.9.1.linux-amd64.tar.gz
 ls 
 tar -xvf node_exporter-1.9.1.linux-amd64.tar.gz
@@ -772,7 +787,7 @@ cd prometheus prometheus-3.5.0-rc.0.linux-amd64
 ls 
 vim prometheus.yml
 ```
-```
+```yml
 - job_name: 'node_exporter'
     static_configs:
       - targets: ['IP:9100']
@@ -783,7 +798,7 @@ vim prometheus.yml
       - targets: ['ip:8080']
 
 ```
-```
+```bash
 pgrep prometheus
 kill id
 ./prometheus &
