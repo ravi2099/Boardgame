@@ -60,13 +60,13 @@ This web application displays lists of board games and their reviews. While anyo
 1. Default vpc
 2. Default SG (8 port open)
 3. Create Instancess 7 (t2.medium, 25gb)
-  - Master Node
-	- Slave-1
-	- Slave-2
-	- SonarQube
-	- Nexus
-  - Monitor
-  - Jenkins (t2 large,30)
+- Master Node
+- Slave-1
+- Slave-2
+- SonarQube
+- Nexus
+- Monitor
+- Jenkins (t2 large,30)
 ---
 ## Setup K8-Cluster using kubeadm [v1.28.1]
 
