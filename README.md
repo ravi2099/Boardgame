@@ -483,6 +483,8 @@ pipeline {
 }
 
 ```
+` 5. Jenkins Declarative Pipeline Syntax (GUI to Script Mapping)`
+
 - Pipeline Syntax
   
   - Sanple Step
@@ -511,7 +513,7 @@ withSonarQubeEnv(credentialsId: 'sonar-token') {
   - server url: https://<sonar_ip_address>:9000
     
     **like: http://54.169.71.209:9000**
-    
+
   - Server authentication token : sonar-token
 
 
