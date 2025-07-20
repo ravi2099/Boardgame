@@ -342,7 +342,6 @@ docker run -d --name Sonar -p 9000:9000 sonarqube:lts-community
 
 ---
 
-
 ## 2. Nexus Server
 
 ### Step 1: Install Docker and Enable Rootless Mode
@@ -374,7 +373,6 @@ cat sonatype-work/nexus3/admin.password
 - **Username:** admin
 
 - **Password:** (copy from the file above)
-
 
 `***check Enable anonymous access***`(if needed for testing or open read access)
 
@@ -542,29 +540,23 @@ sudo systemctl restart jenkins
 - **JDK:**
 
   - Name: `jdk17`
-
   - Check "Install automatically"
-
   - Source: `Adoptium.net`
-
   - Version: `jdk-17.0.9+9`
 
 - **SonarQube Scanner:**
 
   - Name: `sonar-scanner`
-
   - Version: `latest`
 
 - **Maven:**
 
   - Name: `maven3`
-
   - Version: `3.6.1`
 
 - **Docker:**
 
   - Name: `docker`
-
   - Install Automatically
 
 ### Step 8: Credentials Setup
@@ -828,7 +820,7 @@ You'll configure Jenkins to send email notifications using Gmail's SMTP service.
 
 ### Step 1: Generate Gmail App Password
 
-1. Go to https://myaccount.google.com
+1. Go to https://myaccount.google.com/apppasswords
 
 2. Navigate to:
   - `Security` → `2-Step Verification` → Enable it (if not already)
@@ -837,8 +829,9 @@ You'll configure Jenkins to send email notifications using Gmail's SMTP service.
 3. Select:
   - App: `Mail`
   - Device: `Jenkins` (or any name)
-
+**password:** 
 4. ✅ **Copy the generated password **(you’ll use this in Jenkins configuration)
+
 
 ### Step 2: Configure Jenkins Email Notification
 
@@ -852,10 +845,10 @@ You'll configure Jenkins to send email notifications using Gmail's SMTP service.
   - Check Use SSL
   - ✅ Add Credentials:
     - **Kind :** Username with password
-    - **Username :** abrahim.ctech@gmail.com
-    - **Password:** genereted password
-    - **ID :** mail-cred
-  - Select the added credential `abrahimctech@gmail.com`(mail-cred)
+    - **Username :** `abrahim.ctech@gmail.com`
+    - **Password:** `ubdh oyoe hirs wudv`
+    - **ID :** `mail-cred`
+  - Select the added credential `abrahim.ctech@gmail.com`(mail-cred)
 
 
 **2. E-mail Notification**
@@ -866,7 +859,7 @@ You'll configure Jenkins to send email notifications using Gmail's SMTP service.
 - SMTP Port: 465
 - ✅ Check Use SMTP Authentication
   - Username: `abrahim.ctech@gmail.com`
-  - Password: `Generated app password`
+  - Password: `ubdh oyoe hirs wudv`
 
 **3. Test the Configuration**
 - Scroll down to the **Test configuration** section
@@ -956,7 +949,6 @@ vim prometheus.yml
         target_label: instance
       - target_label: __address__
         replacement: 127.0.0.1:9115  # The blackbox exporter's real hostname:port.
-
 ```
 **Restart Prometheus:**
 
@@ -1009,7 +1001,30 @@ kill id
 ./prometheus &
 
 ```
+### Step 5: Connect Grafana with Prometheus
+1. Go to Grafana UI:  `Grafana > Connections > Data sources > Add data source`
+2. Select **Prometheus** from the list.
+3. Fill in the details:
+   - **Name**: `Prometheus` (or any preferred name)
+   - **URL**:
+     ```
+     http://<PROMETHEUS_SERVER_IP>:9090
+     ```
+4. Scroll down and click **Save & Test**.  
+   You should see a message like: `Data source is working`.
 
+### Step 6: Import Dashboards
+1. Navigate to:  `Dashboard > Import`
+2. Paste one of the dashboard IDs listed below.
+3. Click **Load**.
+4. Select your **Prometheus** data source.
+5. Click **Import** to finish.
+
+| Dashboard Name       | Dashboard ID |
+|----------------------|--------------|
+| 🔍 Blackbox Exporter | `7587`       |
+| 🖥️ Node Exporter     | `1860`       |
+---
 
 
 
