@@ -160,9 +160,9 @@ kubeaudit all
 
 ### 5. RBAC Setup (Master Node)
 1. Create cluster service account
-  user-1 , role-1 (cluster admin access)
-  user-2 , role-2 (good level of access)
-  user-3 , role-3 (read only access)
+- user-1 , role-1 (cluster admin access)
+- user-2 , role-2 (good level of access)
+- user-3 , role-3 (read only access)
 
 **Create Namespace**
 
@@ -388,11 +388,11 @@ Modify your `pom.xml` file with the Nexus repository endpoints:
  	 <distributionManagement>
         <repository>
             <id>maven-releases</id>
-            <url>http://13.229.53.109:8081/repository/maven-releases/</url> 
+            <url>http://13.212.202.251:8081/repository/maven-releases/</url> 
         </repository>
         <snapshotRepository>
             <id>maven-snapshots</id>
-            <url>http://13.229.53.109:8081/repository/maven-snapshots/</url>
+            <url>http://13.212.202.251:8081/repository/maven-snapshots/</url>
         </snapshotRepository>
     </distributionManagement>
 ```
@@ -793,7 +793,7 @@ pipeline {
         }
         stage('Deploy To Kubernetes') {
             steps {
-                withKubeConfig(caCertificate: '', clusterName: 'kubernetes', contextName: '', credentialsId: 'k8-cred', namespace: 'webapps', restrictKubeConfigAccess: false, serverUrl: 'https://172.31.37.113:6443') {
+                withKubeConfig(caCertificate: '', clusterName: 'kubernetes', contextName: '', credentialsId: 'k8-cred', namespace: 'webapps', restrictKubeConfigAccess: false, serverUrl: 'https://172.31.40.100:6443') {
                       sh "kubectl apply -f deployment-service.yaml"
                 }
             }
@@ -801,7 +801,7 @@ pipeline {
         
         stage('Verify the Deployment') {
             steps {
-                withKubeConfig(caCertificate: '', clusterName: 'kubernetes', contextName: '', credentialsId: 'k8-cred', namespace: 'webapps', restrictKubeConfigAccess: false, serverUrl: 'https://172.31.37.113:6443') {
+                withKubeConfig(caCertificate: '', clusterName: 'kubernetes', contextName: '', credentialsId: 'k8-cred', namespace: 'webapps', restrictKubeConfigAccess: false, serverUrl: 'https://172.31.40.100:6443') {
                         sh "kubectl get pods -n webapps"
                         sh "kubectl get svc -n webapps"
                 }
