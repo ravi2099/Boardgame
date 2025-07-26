@@ -388,11 +388,11 @@ Modify your `pom.xml` file with the Nexus repository endpoints:
  	 <distributionManagement>
         <repository>
             <id>maven-releases</id>
-            <url>http://18.143.91.119:8081/repository/maven-releases/</url> 
+            <url>http://13.229.53.109:8081/repository/maven-releases/</url> 
         </repository>
         <snapshotRepository>
             <id>maven-snapshots</id>
-            <url>http://18.143.91.119:8081/repository/maven-snapshots/</url>
+            <url>http://13.229.53.109:8081/repository/maven-snapshots/</url>
         </snapshotRepository>
     </distributionManagement>
 ```
@@ -565,7 +565,7 @@ sudo systemctl restart jenkins
 
 - **github**
   - username : `guthub-username`
-  - secret : `github-token`
+  - pass : `github-token`
   - ID : `git-cred`
   - Description : `git-cred`
 
@@ -576,10 +576,10 @@ sudo systemctl restart jenkins
   - Description : `sonar-token`
 
 - **Docker Hub**
-  - username: dockerhub_username
-  - pass : dockerhub_password
-  - ID : docker-cred
-  - Description : docker-cred
+  - username: `dockerhub_username`
+  - pass : `dockerhub_password`
+  - ID : `docker-cred`
+  - Description : `docker-cred`
 
 - **K8s-Cluster**
   - Kind : `secret text`
