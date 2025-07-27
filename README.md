@@ -1,5 +1,7 @@
 # BoardgameListingWebApp
 
+![Project FLow](https://github.com/abrahimcse/Boardgame/blob/main/Images/Board%20game.gif)
+
 ## Description
 
 **Board Game Database Full-Stack Web Application.**
@@ -636,15 +638,21 @@ sudo systemctl restart jenkins
   - Source: `Adoptium.net`
   - Version: `jdk-17.0.9+9`
 
+![JDK](https://github.com/abrahimcse/Boardgame/blob/main/Images/tools-jdk.png)
+
 - **SonarQube Scanner:**
 
   - Name: `sonar-scanner`
   - Version: `latest`
 
+![Scanner](https://github.com/abrahimcse/Boardgame/blob/main/Images/tools-sonarqubescanner.png)
+
 - **Maven:**
 
   - Name: `maven3`
   - Version: `3.6.1`
+
+![Maven](https://github.com/abrahimcse/Boardgame/blob/main/Images/Tools-maven.png)
 
 - **Docker:**
 
@@ -678,6 +686,8 @@ sudo systemctl restart jenkins
   - secret: `token` (kubectl describe secret mysecretname -n webapps)
   - ID : `k8-cred`
   - Description : `k8-cred`
+
+![Credentials](https://github.com/abrahimcse/Boardgame/blob/main/Images/global-credential-jenkins.png)
 
 ### Step 9: Add Maven Settings File (for Nexus)
 
@@ -963,6 +973,13 @@ pipeline {
 }
 
 ```
+**Pipeline Stages**
+
+![Stages](https://github.com/abrahimcse/Boardgame/blob/main/Images/jenkins-successfull.png)
+
+**Workspace**
+
+![Workspace](https://github.com/abrahimcse/Boardgame/blob/main/Images/Jenkins%20Workspace.png)
 ---
 
 ## 📧 Jenkins Email Notification Setup (Gmail SMTP)
@@ -1001,7 +1018,6 @@ You'll configure Jenkins to send email notifications using Gmail's SMTP service.
     - **ID :** `mail-cred`
   - Select the added credential `abrahim.ctech@gmail.com`(mail-cred)
 
-
 **2. E-mail Notification**
 - SMTP Server: `smtp.gmail.com`
 
@@ -1016,6 +1032,12 @@ You'll configure Jenkins to send email notifications using Gmail's SMTP service.
 - Scroll down to the **Test configuration** section
 - Enter your email: `abrahim.ctech@gmail.com`
 - Click **Test Configuration**
+
+![Email Test](https://github.com/abrahimcse/Boardgame/blob/main/Images/Test-email.png)
+
+![Test Email Send](https://github.com/abrahimcse/Boardgame/blob/main/Images/test-email.png)
+
+![Success Email](https://github.com/abrahimcse/Boardgame/blob/main/Images/successful-email.png)
 
 You should receive a **test email** if everything is configured properly.
 
@@ -1059,6 +1081,8 @@ sudo systemctl start grafana-server
 **👤 Default Login:**
 - Username: `admin`
 - Password: `admin`
+
+![Prometheus](https://github.com/abrahimcse/Boardgame/blob/main/Images/Prometheus.png)
 
 ### Step 3: Setup Blackbox Exporter
 **🔗 [Download Blackbox Exporter](https://prometheus.io/download/#blackbox_exporter)**
@@ -1107,8 +1131,9 @@ vim prometheus.yml
 pgrep prometheus
 kill id
 ./prometheus & 
-
 ```
+
+![BlackBox](https://github.com/abrahimcse/Boardgame/blob/main/Images/Blackbox.png)
 
 ### Step 4: Install Node Exporter (on Jenkins server)
 
@@ -1150,8 +1175,9 @@ vim prometheus.yml
 pgrep prometheus
 kill id
 ./prometheus &
-
 ```
+![Node Exporter](https://github.com/abrahimcse/Boardgame/blob/main/Images/Node%20Exporter.png)
+
 ### Step 5: Connect Grafana with Prometheus
 1. Go to Grafana UI:  `Grafana > Connections > Data sources > Add data source`
 2. Select **Prometheus** from the list.
@@ -1175,6 +1201,16 @@ kill id
 |----------------------|--------------|
 | 🔍 Blackbox Exporter | `7587`       |
 | 🖥️ Node Exporter     | `1860`       |
+|-------------------------------------|
+
+**Grafana Blackbox**
+
+![Grafana Blackbox](https://github.com/abrahimcse/Boardgame/blob/main/Images/grafana%20blackbox.png)
+
+**Grafana NodeExporter**
+
+![Grafana NodeExporter](https://github.com/abrahimcse/Boardgame/blob/main/Images/grafana%20Node%20exporter.png)
+
 ---
 
 
