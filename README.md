@@ -5,6 +5,8 @@
 **Board Game Database Full-Stack Web Application.**
 This web application displays lists of board games and their reviews. While anyone can view the board game lists and reviews, they are required to log in to add/ edit the board games and their reviews. The 'users' have the authority to add board games to the list and add reviews, and the 'managers' have the authority to edit/ delete the reviews on top of the authorities of users.  
 
+![Boar Game](https://github.com/abrahimcse/Boardgame/blob/main/Images/BoardGameDashboard.png)
+
 ## Technologies
 
 - Java
@@ -52,6 +54,9 @@ This web application displays lists of board games and their reviews. While anyo
   - username: `daffy`   |     password: `duck`  (manager role)
 5. You can also sign-up as a new user and customize your role to play with the application! 😊
 
+![Board Game Signup](https://github.com/abrahimcse/Boardgame/blob/main/Images/BoardGameSignup.png)
+
+![Board Game Clue](https://github.com/abrahimcse/Boardgame/blob/main/Images/BoardgameClue.png)
 ---
 # Infrastructure & Installation (AWS EC2 + K8s + DevOps Tools)
 
@@ -67,61 +72,107 @@ This web application displays lists of board games and their reviews. While anyo
 - Monitor
 - Jenkins (t2 large,30)
 
+![EC2 Instances](https://github.com/abrahimcse/Boardgame/blob/main/Images/Instance.png)
+
+**Security Group:** Default SG with port open
+
+![Security Group](https://github.com/abrahimcse/Boardgame/blob/main/Images/security%20group.png)
 ---
 
-## Setup K8-Cluster using kubeadm [v1.28.1]
+## Setup K8-Cluster using kubeadm
 
-### 1. Prepare Base Script for All Nodes (Master & Worker Nodes)
+### 1. Prepare Base Script for All Nodes (Master + Worker Nodes)
 
 **Create a bootstrap shell script `bp.sh:`**
 
 ```bash
-vim bp.sh
+vim k8s-cluster.sh
 ```
 **Paste the following content:**
 
 ```bash
-sudo apt-get update
+#!/bin/bash
+sudo apt update -y
 
-sudo apt install docker.io -y
-sudo chmod 666 /var/run/docker.sock
+# Disable Swap
+sudo swapoff -a
+sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
 
-sudo apt-get install -y apt-transport-https ca-certificates curl gnupg
-sudo mkdir -p -m 755 /etc/apt/keyrings
+# Install deps
+sudo apt install -y curl apt-transport-https ca-certificates gnupg lsb-release
 
+# Add Kubernetes Repo
+sudo mkdir -p /etc/apt/keyrings
 curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+
+sudo apt update -y
+
+# Install Kubernetes components
+sudo apt install -y kubelet kubeadm kubectl
+sudo apt-mark hold kubelet kubeadm kubectl
+
+# Install containerd
+sudo apt install -y containerd
+
+# Containerd config
+sudo mkdir -p /etc/containerd
+containerd config default | sudo tee /etc/containerd/config.toml
+
+# Enable Systemd Cgroup Driver
+sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
+
+sudo systemctl restart containerd
+sudo systemctl enable containerd
+sudo systemctl enable kubelet
 
 ```
 **Run the script:**
 
 ```bash
-chmod +x bp.sh
-./bp.sh
-
-sudo apt update
+chmod +x k8s-cluster.sh
+./k8s-cluster.sh
 ```
-**Install Kubernetes components:**
+**Run the following commands before `kubeadm init`**
 
 ```bash
-
-sudo apt install -y kubeadm=1.28.1-1.1 kubelet=1.28.1-1.1 kubectl=1.28.1-1.1
+vim sysctl-fix.sh
 ```
-### 2. Initialize (Master Node)
+**Paste the following content:**
+
+```bash
+#!/bin/bash
+
+# Load br_netfilter module
+sudo modprobe br_netfilter
+echo 'br_netfilter' | sudo tee /etc/modules-load.d/k8s.conf
+
+# Set sysctl params
+sudo tee /etc/sysctl.d/k8s.conf <<EOF
+net.bridge.bridge-nf-call-iptables  = 1
+net.ipv4.ip_forward                 = 1
+net.bridge.bridge-nf-call-ip6tables = 1
+EOF
+
+# Apply sysctl changes
+sudo sysctl --system
+```
+**Run the script:**
+
+```bash
+chmod +x sysctl-fix.sh
+./sysctl-fix.sh
+```
+
+### 2. Initialize (Master Node only)
 
 ```yml
 sudo kubeadm init --pod-network-cidr=10.244.0.0/16
 ```
 ✅ Note: Save the `kubeadm join` command displayed after this step — you'll need it on `Worker nodes`.
 
-### 3. Join (Worker Nodes)
 
-**Run the saved `kubeadm join command` from `Master node` output on each `Worker node`:**
-
-```bash
-sudo kubeadm join <MASTER_IP>:6443 --token <TOKEN> --discovery-token-ca-cert-hash sha256:<HASH>
-```
-### 4. Configure (Master Node)
+### 3. Configure (Master Node only)
 
 **Configure `kubectl` for the user:**
 
@@ -131,10 +182,10 @@ sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
 ```
 
-**Deploy CNI Plugin (`Calico`)**
+**Apply Calico CNI (`Calico`)**
 
 ```bash
-kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
+kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.26.1/manifests/calico.yaml
 ```
 
 **Install Ingress Controller**
@@ -142,11 +193,7 @@ kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
 ```bash
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v0.49.0/deploy/static/provider/baremetal/deploy.yaml
 ```
-**Check node status:**
 
-```bash
-kubectl get nodes
-```
 **Security Audit (for Testing)**
 
 Install and run [`Shopify kubeaudit`](https://github.com/Shopify/kubeaudit/releases):
@@ -156,6 +203,24 @@ wget https://github.com/Shopify/kubeaudit/releases/download/v0.22.2/kubeaudit_0.
 tar -xvzf kubeaudit_0.22.2_linux_amd64.tar.gz
 sudo mv kubeaudit /usr/local/bin/
 kubeaudit all
+```
+### 4. Join (Worker Nodes only)
+
+**Run the saved `kubeadm join command` from `Master node` output on each `Worker node`:**
+
+```bash
+sudo kubeadm join <MASTER_IP>:6443 --token <TOKEN> --discovery-token-ca-cert-hash sha256:<HASH>
+```
+**Check node status (Master Node Only)**
+
+```bash
+kubectl get nodes
+kubectl get nodes -o wide
+```
+**Containerd & Kubelet check (Master Node Only)**
+```bash
+sudo systemctl status containerd
+sudo systemctl status kubelet
 ```
 
 ### 5. RBAC Setup (Master Node)
@@ -326,6 +391,8 @@ docker run -d --name Sonar -p 9000:9000 sonarqube:lts-community
 
 3. Click **Generate** and **copy the token**
 
+![Sonar Token](https://github.com/abrahimcse/Boardgame/blob/main/Images/Sonar-Token.png)
+
 ### Step 4: Configure Webhook for Jenkins
 
 1. Navigate to: `**Administration > Configuration > Webhooks**`
@@ -338,11 +405,24 @@ docker run -d --name Sonar -p 9000:9000 sonarqube:lts-community
 
 **📌 Note:** Ensure Jenkins is reachable from SonarQube server.
 
-![webhook Image]()
+![webhook Image](https://github.com/abrahimcse/Boardgame/blob/main/Images/sonarqube%20webhook.png)
 
+**BoarGame SonarQube Dashboard**
+
+![SonarQube](https://github.com/abrahimcse/Boardgame/blob/main/Images/SonarqubeBoardgame1.png)
+
+**BoarGame SonarQube Dashboard**
+
+![SonarQube](https://github.com/abrahimcse/Boardgame/blob/main/Images/SonarqubeBoardgame2.png)
+
+**BoarGame SonarQube Issue List**
+
+![SonarQube Issue](https://github.com/abrahimcse/Boardgame/blob/main/Images/SonarQube%20Issue.png)
 ---
 
 ## 2. Nexus Server
+
+![Nexus Dashboard](https://github.com/abrahimcse/Boardgame/blob/main/Images/Nexus-browser.png)
 
 ### Step 1: Install Docker and Enable Rootless Mode
 
@@ -378,7 +458,12 @@ cat sonatype-work/nexus3/admin.password
 
 Browser
  - maven-releases (copy)
+
+ ![maven-releases](https://github.com/abrahimcse/Boardgame/blob/main/Images/nexus-release.png)
+
  - maven-snapshots (copy)
+
+ ![maven-snapshots](https://github.com/abrahimcse/Boardgame/blob/main/Images/nexus-snapshots.png)
  
 ### Step 4: Update Your Maven pom.xml
 
