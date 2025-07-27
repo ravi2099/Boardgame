@@ -565,6 +565,13 @@ chmod +x jenkin.sh
 ```bash
 sudo cat /var/lib/jenkins/secrets/initialAdminPassword
 ```
+![Jenkins Started](https://github.com/abrahimcse/Boardgame/blob/main/Images/jenkins.png)
+
+![Jenkins Getting Started](https://github.com/abrahimcse/Boardgame/blob/main/Images/jenkins-started.png)
+
+![Create Admin User](https://github.com/abrahimcse/Boardgame/blob/main/Images/jenkinsAdminUser.png)
+
+![Configuration](https://github.com/abrahimcse/Boardgame/blob/main/Images/jenkins-configurations.png)
 
 ### Step 4: Install kubectl on Jenkins Server
 ```
@@ -616,7 +623,7 @@ sudo systemctl restart jenkins
 
 *📝 Restart Jenkins after plugin installation.*
 
-![Plugins]() 
+![Plugins](https://github.com/abrahimcse/Boardgame/blob/main/Images/jenkins-plugins.png) 
 
 ### Step 7: Global Tool Configuration
 
