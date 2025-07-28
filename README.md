@@ -59,7 +59,19 @@ This web application displays lists of board games and their reviews. While anyo
 ![Board Game Signup](https://github.com/abrahimcse/Boardgame/blob/main/Images/BoardGameSignup.png)
 
 ![Board Game Clue](https://github.com/abrahimcse/Boardgame/blob/main/Images/BoardgameClue.png)
+
+### ☁️ DevOps & Deployment
+- Docker
+- Kubernetes
+- Kubernets Cluster
+- Jenkins (CI/CD pipeline)
+- Nexus (Artifact Repository)
+- SonarQube (Code Quality Check)
+- Trivy (Container Image Scanning)
+- Gmail SMTP (Jenkins Email Notification)
+
 ---
+
 # Infrastructure & Installation (AWS EC2 + K8s + DevOps Tools)
 
 ## 1.AWS Setup
@@ -687,6 +699,13 @@ sudo systemctl restart jenkins
   - ID : `k8-cred`
   - Description : `k8-cred`
 
+- **Gmail Notification**
+    - Kind : Username with password
+    - Username :`abrahim.ctech@gmail.com`
+    - Password: `ubdh oyoe hirs wudv`
+    - ID : `mail-cred`
+    - Description : `mail-cred`
+
 ![Credentials](https://github.com/abrahimcse/Boardgame/blob/main/Images/global-credential-jenkins.png)
 
 ### Step 9: Add Maven Settings File (for Nexus)
@@ -806,6 +825,8 @@ Here’s a quick `visual stage flow` from your pipeline for clarity:
 10. Push to DockerHub
 11. Deploy to Kubernetes →
 12. Verify the Deployment →
+
+> Pipeline code in `Jenkinsfile` modify on your requirments
 
 **Pipeline Stages**
 
